@@ -12,7 +12,7 @@ using namespace std;
 using namespace std::chrono;
 
 char board[8][8];
-bool whites_turn = true;
+bool whites_turn;
 int played_moves = 0;
 int INF = INT_MAX;
 
@@ -61,8 +61,7 @@ struct Move
 //done
 struct possible_move
 {
-    Move move, ancestor_move;
-    int depth;
+    Move move;
     char local_board[8][8];
     bool whites_turn;
 };
@@ -517,9 +516,8 @@ string bfs_search(int time_limit)
     //debug_board();
 
     auto start = high_resolution_clock::now();
-    vector<Move> playable_moves;
-    map<Move, pair<int, int>> playable_move_value;
-    queue<possible_move> possible_moves;
+    vector<Move> moves;
+    map<Move, pair<queue<possible_move>, int>> moves_value;
 
     for (int i = 0; i < 8; i++)
     {
@@ -528,129 +526,129 @@ string bfs_search(int time_limit)
             if (whites_turn)
             {
                 if (board[i][j] == 'P')
-                    add_possible_pawn_moves({ i, j }, board, playable_moves);
+                    add_possible_pawn_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'N')
-                    add_possible_knight_moves({ i, j }, board, playable_moves);
+                    add_possible_knight_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'B')
-                    add_possible_bishop_moves({ i, j }, board, playable_moves);
+                    add_possible_bishop_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'R')
-                    add_possible_rock_moves({ i, j }, board, playable_moves);
+                    add_possible_rock_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'Q')
-                    add_possible_queen_moves({ i, j }, board, playable_moves);
+                    add_possible_queen_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'K')
-                    add_possible_king_moves({ i, j }, board, playable_moves);
+                    add_possible_king_moves({ i, j }, board, moves);
             }
             else
             {
                 if (board[i][j] == 'p')
-                    add_possible_pawn_moves({ i, j }, board, playable_moves);
+                    add_possible_pawn_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'n')
-                    add_possible_knight_moves({ i, j }, board, playable_moves);
+                    add_possible_knight_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'b')
-                    add_possible_bishop_moves({ i, j }, board, playable_moves);
+                    add_possible_bishop_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'r')
-                    add_possible_rock_moves({ i, j }, board, playable_moves);
+                    add_possible_rock_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'q')
-                    add_possible_queen_moves({ i, j }, board, playable_moves);
+                    add_possible_queen_moves({ i, j }, board, moves);
                 else if (board[i][j] == 'k')
-                    add_possible_king_moves({ i, j }, board, playable_moves);
+                    add_possible_king_moves({ i, j }, board, moves);
             }
         }
     }
 
-    for (Move move:playable_moves) 
+    for (Move move : moves) 
     {
         //cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << endl;
-        playable_move_value[move].first = INF;
-        playable_move_value[move].second = 0;
+        moves_value[move].second = INF;
         possible_move pm;
         pm.move = move;
-        pm.ancestor_move = move;
         pm.whites_turn = whites_turn;
-        pm.depth = 1;
         memcpy(pm.local_board, board, sizeof(pm.local_board));
-        possible_moves.push(pm);
+        moves_value[move].first.push(pm);
     }
 
-    while (true) 
+    bool stop = false;
+    while (not stop) 
     {
-        auto now = high_resolution_clock::now();
-        if (now - start > chrono::milliseconds(time_limit)) break;
-
-        possible_move pm = possible_moves.front();
-        possible_moves.pop();
-        if (playable_move_value[pm.ancestor_move].second < pm.depth)
+        for (Move move : moves) 
         {
-            playable_move_value[pm.ancestor_move].first = INF;
-            playable_move_value[pm.ancestor_move].second = pm.depth;
-        }
-        make_move(pm.move, pm.local_board);
-        pm.whites_turn = not pm.whites_turn;
-        playable_move_value[pm.ancestor_move].first = min(evaluate(pm.local_board),
-                                                playable_move_value[pm.ancestor_move].first);
+            auto now = high_resolution_clock::now();
+            if (now - start > chrono::milliseconds(time_limit)) { stop = true; break; }
 
-        vector<Move> moves;
-        for (int i = 0; i < 8; i++)
-        {
-            for (int j = 0; j < 8; j++)
+            int number_of_possible_moves = moves_value[move].first.size();
+            moves_value[move].second = INF;
+
+            while (number_of_possible_moves--) 
             {
-                if (pm.whites_turn)
+                possible_move pm = moves_value[move].first.front();
+                moves_value[move].first.pop();
+
+                make_move(pm.move, pm.local_board);
+                pm.whites_turn = not pm.whites_turn;
+                moves_value[move].second = min(moves_value[move].second, evaluate(pm.local_board));
+
+                vector<Move> next_moves;
+                for (int i = 0; i < 8; i++)
                 {
-                    if (pm.local_board[i][j] == 'P')
-                        add_possible_pawn_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'N')
-                        add_possible_knight_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'B')
-                        add_possible_bishop_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'R')
-                        add_possible_rock_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'Q')
-                        add_possible_queen_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'K')
-                        add_possible_king_moves({ i, j }, pm.local_board, moves);
+                    for (int j = 0; j < 8; j++)
+                    {
+                        if (pm.whites_turn)
+                        {
+                            if (pm.local_board[i][j] == 'P')
+                                add_possible_pawn_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'N')
+                                add_possible_knight_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'B')
+                                add_possible_bishop_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'R')
+                                add_possible_rock_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'Q')
+                                add_possible_queen_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'K')
+                                add_possible_king_moves({ i, j }, pm.local_board, next_moves);
+                        }
+                        else
+                        {
+                            if (pm.local_board[i][j] == 'p')
+                                add_possible_pawn_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'n')
+                                add_possible_knight_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'b')
+                                add_possible_bishop_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'r')
+                                add_possible_rock_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'q')
+                                add_possible_queen_moves({ i, j }, pm.local_board, next_moves);
+                            else if (pm.local_board[i][j] == 'k')
+                                add_possible_king_moves({ i, j }, pm.local_board, next_moves);
+                        }
+                    }
                 }
-                else
+
+                for (Move next_move : next_moves) 
                 {
-                    if (pm.local_board[i][j] == 'p')
-                        add_possible_pawn_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'n')
-                        add_possible_knight_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'b')
-                        add_possible_bishop_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'r')
-                        add_possible_rock_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'q')
-                        add_possible_queen_moves({ i, j }, pm.local_board, moves);
-                    else if (pm.local_board[i][j] == 'k')
-                        add_possible_king_moves({ i, j }, pm.local_board, moves);
+                    possible_move npm;
+                    npm.move = next_move;
+                    npm.whites_turn = pm.whites_turn;
+                    memcpy(npm.local_board, pm.local_board, sizeof(npm.local_board));
+                    moves_value[move].first.push(npm);
                 }
             }
         }
-
-        for (Move move : moves)
-        {
-            possible_move p_m;
-            p_m.move = move;
-            p_m.ancestor_move = pm.ancestor_move;
-            p_m.whites_turn = pm.whites_turn;
-            p_m.depth = pm.depth + 1;
-            memcpy(p_m.local_board, pm.local_board, sizeof(p_m.local_board));
-            possible_moves.push(p_m);
-        }
     }
 
-    Move bestmove = playable_moves[0];
-    int bestmove_value = -INF;
-    for (const auto& playable_move : playable_move_value) 
+    Move bestmove;
+    int bestmove_value;
+    bestmove_value = -INF;
+    for (const auto& move_value : moves_value) 
     {
-        cerr << square_to_notation(playable_move.first.from) << " "
-            << square_to_notation(playable_move.first.to) << " "
-            << bestmove_value << " " << playable_move.second.first << " " 
-            << playable_move.second.second << endl;
-        if (bestmove_value < playable_move.second.first) 
+        /*cerr << square_to_notation(move_value.first.from) << " "
+            << square_to_notation(move_value.first.to) << " "
+            << bestmove_value << " " << move_value.second.second << endl;*/
+        if (bestmove_value < move_value.second.second) 
         {
-            bestmove_value = playable_move.second.first;
-            bestmove = playable_move.first;
+            bestmove_value = move_value.second.second;
+            bestmove = move_value.first;
         }
     }
     
@@ -719,6 +717,7 @@ int main()
             if (type == "startpos") 
             {
                 reset_board();
+                whites_turn = true;
             }
             else 
             {
