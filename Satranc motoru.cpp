@@ -63,7 +63,7 @@ int checkmate = INF - 1;
 int rr;
 square en_passant_sq;
 
-void debug_board() {
+void debug_board(char board[8][8]) {
     cerr << "DEBUG Board (whites_turn=" << whites_turn << "):" << endl;
     for (int i = 7; i >= 0; i--) {
         cerr << i + 1 << " ";
@@ -92,39 +92,63 @@ string square_to_notation(square sq)
     return string{ static_cast<char>(sq.column + 'a'), static_cast<char>(sq.line + '1') };
 }
 
-// en passant-a ozel bi make move yazilmali
 void make_move(Move move, char(&local_board)[8][8])
 {
     if (local_board[move.from.line][move.from.column] == 'K' and move.from.line == 0
-        and move.from.column == 4)
+        and move.from.column == 4 and move.to.line == 0 and move.to.column % 4 == 2)
     {
-        if (move.to.line == 0 and move.to.column == 6)
+        if (move.to.column == 6)
         {
+            local_board[0][7] = '#';
             local_board[0][6] = 'K';
             local_board[0][5] = 'R';
+            local_board[0][4] = '#';
         }
-        else if (move.to.line == 0 and move.to.column == 2)
+        else 
         {
+            local_board[0][0] = '#';
             local_board[0][2] = 'K';
             local_board[0][3] = 'R';
+            local_board[0][4] = '#';
         }
         return;
     }
+
     else if (local_board[move.from.line][move.from.column] == 'k' and move.from.line == 7
-        and move.from.column == 4)
+        and move.from.column == 4 and move.to.line == 7 and move.to.column % 4 == 2)
     {
-        if (move.to.line == 7 and move.to.column == 6)
+        if (move.to.column == 6)
         {
+            local_board[7][7] = '#';
             local_board[7][6] = 'k';
             local_board[7][5] = 'r';
+            local_board[7][4] = '#';
         }
-        else if (move.to.line == 7 and move.to.column == 2)
+        else 
         {
+            local_board[7][0] = '#';
             local_board[7][2] = 'k';
             local_board[7][3] = 'r';
+            local_board[7][4] = '#';
         }
         return;
     }
+
+    if (local_board[move.to.line][move.to.column] == '#' and
+        (local_board[move.from.line][move.from.column] == 'P'
+         or local_board[move.from.line][move.from.column] == 'p') and
+        (move.to.column == move.from.column + 1 or move.to.column == move.from.column - 1)) 
+    {
+        if (local_board[move.from.line][move.from.column] == 'P') 
+        {
+            local_board[move.to.line - 1][move.to.column] = '#';
+        }
+        else 
+        {
+            local_board[move.to.line + 1][move.to.column] = '#';
+        }
+    }
+
     local_board[move.to.line][move.to.column] = local_board[move.from.line][move.from.column];
     local_board[move.from.line][move.from.column] = '#';
 }
@@ -1115,7 +1139,7 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
     vector<Move> moves;
     add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
 
-    Move bestmove;
+    Move bestmove = { 1, 1 };
     int bestmove_value = -INF;
     for (Move move : moves)
     {
@@ -1123,9 +1147,9 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
 
         int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
         cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
+
         if (bestmove_value < move_value)
         {
-            
             bestmove_value = move_value;
             bestmove = move;
         }
