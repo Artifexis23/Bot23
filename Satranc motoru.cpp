@@ -63,19 +63,6 @@ int checkmate = INF - 1;
 int rr;
 square en_passant_sq;
 
-void debug_board(char board[8][8]) {
-    cerr << "DEBUG Board (whites_turn=" << whites_turn << "):" << endl;
-    for (int i = 7; i >= 0; i--) {
-        cerr << i + 1 << " ";
-        for (int j = 0; j < 8; j++) {
-            if (board[i][j] == '#') cerr << ". ";
-            else cerr << board[i][j] << " ";
-        }
-        cerr << endl;
-    }
-    cerr << "  a b c d e f g h" << endl;
-}
-
 bool is_same_team(char piece1, char piece2)
 {
     if (piece1 == '#' or piece2 == '#') return false;
@@ -134,8 +121,7 @@ void make_move(Move move, char(&local_board)[8][8])
         return;
     }
 
-    if (local_board[move.to.line][move.to.column] == '#' and
-        (local_board[move.from.line][move.from.column] == 'P'
+    if (local_board[move.to.line][move.to.column] == '#' and (local_board[move.from.line][move.from.column] == 'P'
          or local_board[move.from.line][move.from.column] == 'p') and
         (move.to.column == move.from.column + 1 or move.to.column == move.from.column - 1)) 
     {
@@ -151,6 +137,22 @@ void make_move(Move move, char(&local_board)[8][8])
 
     local_board[move.to.line][move.to.column] = local_board[move.from.line][move.from.column];
     local_board[move.from.line][move.from.column] = '#';
+}
+
+void debug_board(char board[8][8], Move move) {
+    char local_board[8][8];
+    memcpy(local_board, board, sizeof(local_board));
+    make_move(move, local_board);
+    cerr << "DEBUG Board (whites_turn=" << whites_turn << "):" << endl;
+    for (int i = 7; i >= 0; i--) {
+        cerr << i + 1 << " ";
+        for (int j = 0; j < 8; j++) {
+            if (local_board[i][j] == '#') cerr << ". ";
+            else cerr << local_board[i][j] << " ";
+        }
+        cerr << endl;
+    }
+    cerr << "  a b c d e f g h" << endl;
 }
 
 bool is_attacked_by_white(square sq, char board[8][8])
@@ -465,6 +467,7 @@ bool is_illegal(Move move, char board[8][8], bool whites_turn)
     char local_board[8][8];
     memcpy(local_board, board, sizeof(local_board));
     make_move(move, local_board);
+    //debug_board(local_board);
 
     for (int i = 0; i < 8; i++)
     {
@@ -894,11 +897,9 @@ void add_possible_rock_moves(int rr, char board[8][8], bool whites_turn, vector<
     }
 }
 
-void add_possible_moves(int rr, char local_board[8][8], bool whites_turn, square en_passant_sq,
-    vector<Move>& moves)
+void add_possible_moves(int rr, char local_board[8][8], bool whites_turn, square en_passant_sq, vector<Move>& moves)
 {
-    if (whites_turn) add_possible_rock_moves(rr, local_board, whites_turn, moves);
-    else add_possible_rock_moves(rr, local_board, whites_turn, moves);
+    add_possible_rock_moves(rr, local_board, whites_turn, moves);
 
     for (int i = 0; i < 8; i++)
     {
@@ -1088,8 +1089,7 @@ int evaluate(char board[8][8])
     return square_to_notation(bestmove.from) + square_to_notation(bestmove.to);
 }*/
 
-int dfs_search(int depth, int rr, square en_passant_sq, Move move,
-    bool local_whites_turn, char board[8][8])
+int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_whites_turn, char board[8][8])
 {
     char local_board[8][8];
     memcpy(local_board, board, sizeof(local_board));
@@ -1111,7 +1111,11 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move,
         int best_value = -INF;
         for (Move move : moves)
         {
-            if (is_illegal(move, local_board, local_whites_turn)) continue;
+            if (is_illegal(move, local_board, local_whites_turn))
+            {
+                best_value = max(best_value, -checkmate);
+                continue;
+            }
 
             int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, local_whites_turn, local_board);
             best_value = max(best_value, move_value);
@@ -1124,7 +1128,11 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move,
         int worst_value = INF;
         for (Move move : moves)
         {
-            if (is_illegal(move, local_board, local_whites_turn)) continue;
+            if (is_illegal(move, local_board, local_whites_turn))
+            {
+                worst_value = min(worst_value, checkmate);
+                continue;
+            }
 
             int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, local_whites_turn, local_board);
             worst_value = min(worst_value, move_value);
@@ -1139,7 +1147,7 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
     vector<Move> moves;
     add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
 
-    Move bestmove = { 1, 1 };
+    Move bestmove = { {0, 0}, {1, 1} };
     int bestmove_value = -INF;
     for (Move move : moves)
     {
@@ -1147,7 +1155,7 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
 
         int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
         cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
-
+        debug_board(board, move);
         if (bestmove_value < move_value)
         {
             bestmove_value = move_value;
@@ -1263,7 +1271,7 @@ int main()
         else if (cmd == "go") 
         {
             string bestmove, info;
-            int wtime = -1, btime = -1, winc = 0, binc = 0, depth = -1, movetime = -1;
+            int wtime = -1, btime = -1, winc = 0, binc = 0, depth = 4, movetime = -1;
             
             while (iss >> info) 
             {
@@ -1275,7 +1283,7 @@ int main()
                 else if (info == "movetime") iss >> movetime;
             }
 
-            bestmove = move_generator(5, rr, en_passant_sq, whites_turn, board);
+            bestmove = move_generator(depth, rr, en_passant_sq, whites_turn, board);
             
             cout << "bestmove " << bestmove << endl;
         }
