@@ -3,6 +3,7 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <unordered_map>
 #include <cstring>
 #include <climits>
 #include <sstream>
@@ -33,16 +34,28 @@ struct square
     {
         return line != other.line or column != other.column;
     }
+
+    bool operator==(const square& other) const
+    {
+        return line == other.line and column == other.column;
+    }
 };
 
 struct Move
 {
     square from, to;
+    char pawn_promotion = '-';
 
     bool operator<(const Move& other) const
     {
         if (from != other.from) return from < other.from;
-        else return to < other.to;
+        if (to != other.to) return to < other.to;
+        return pawn_promotion < other.pawn_promotion;
+    }
+
+    bool operator==(const Move& other) const
+    {
+        return from == other.from and to == other.to and pawn_promotion == other.pawn_promotion;
     }
 };
 
@@ -58,10 +71,13 @@ struct possible_move
 char board[8][8];
 bool whites_turn;
 int played_moves = 0;
-int INF = INT_MAX;
-int checkmate = INF - 1;
 int rr;
 square en_passant_sq;
+vector<Move> move_path;
+unordered_map<string, int> position_count;
+int INF = INT_MAX;
+int checkmate = INF - 1;
+int draw = 10;
 
 bool is_same_team(char piece1, char piece2)
 {
@@ -77,6 +93,62 @@ square notation_to_square(string notation)
 string square_to_notation(square sq)
 {
     return string{ static_cast<char>(sq.column + 'a'), static_cast<char>(sq.line + '1') };
+}
+
+string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_sq) 
+{
+    string FEN="";
+
+    for (int line = 0; line < 8; line++) 
+    {
+        char empty_count = '0';
+
+        for (int column = 0; column < 8; column++)
+        {
+            if (board[line][column] == '#')
+                empty_count++;
+            else
+            {
+                if (empty_count != '0') 
+                {
+                    FEN.push_back(empty_count);
+                    empty_count = '0';
+                }
+
+                FEN.push_back(board[line][column]);
+            }
+        }
+
+        if (empty_count != '0') 
+            FEN.push_back(empty_count);
+
+        FEN.push_back('/');
+    }
+
+    FEN.push_back('|');
+    FEN += whites_turn ? "w" : "b";
+
+    FEN.push_back('|');
+    string castling;
+    if (rr & K)
+        castling.push_back('K');
+    if (rr & Q)
+        castling.push_back('Q');
+    if (rr & k)
+        castling.push_back('k');
+    if (rr & q)
+        castling.push_back('q');
+
+    if (castling.size() == 0)
+        FEN.push_back('-');
+    else FEN += castling;
+
+    FEN.push_back('|');
+    if (en_passant_sq != square{ -1, -1 })
+        FEN += square_to_notation(en_passant_sq);
+    else FEN.push_back('-');
+    
+    return FEN;
 }
 
 void make_move(Move move, char(&local_board)[8][8])
@@ -133,6 +205,50 @@ void make_move(Move move, char(&local_board)[8][8])
         {
             local_board[move.to.line + 1][move.to.column] = '#';
         }
+    }
+
+    if (local_board[move.from.line][move.from.column] == 'P' and move.to.line == 7)
+    {
+        if (move.pawn_promotion == 'q')
+        {
+            local_board[move.to.line][move.to.column] = 'Q';
+        }
+        else if (move.pawn_promotion == 'r')
+        {
+            local_board[move.to.line][move.to.column] = 'R';
+        }
+        else if (move.pawn_promotion == 'n')
+        {
+            local_board[move.to.line][move.to.column] = 'N';
+        }
+        else
+        {
+            local_board[move.to.line][move.to.column] = 'B';
+        }
+        local_board[move.from.line][move.from.column] = '#';
+        return;
+    }
+
+    if (local_board[move.from.line][move.from.column] == 'p' and move.to.line == 0)
+    {
+        if (move.pawn_promotion == 'q')
+        {
+            local_board[move.to.line][move.to.column] = 'q';
+        }
+        else if (move.pawn_promotion == 'r')
+        {
+            local_board[move.to.line][move.to.column] = 'r';
+        }
+        else if (move.pawn_promotion == 'n')
+        {
+            local_board[move.to.line][move.to.column] = 'n';
+        }
+        else
+        {
+            local_board[move.to.line][move.to.column] = 'b';
+        }
+        local_board[move.from.line][move.from.column] = '#';
+        return;
     }
 
     local_board[move.to.line][move.to.column] = local_board[move.from.line][move.from.column];
@@ -193,12 +309,14 @@ bool is_attacked_by_white(square sq, char board[8][8])
     {
         line++;
         column++;
-        if (line > 7 or column > 7 or is_same_team(board[line][column],
-            board[sq.line][sq.column]))
+        if (line > 7 or column > 7)
             break;
 
         if (board[line][column] == 'B' or board[line][column] == 'Q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
@@ -206,11 +324,14 @@ bool is_attacked_by_white(square sq, char board[8][8])
     {
         line++;
         column--;
-        if (line > 7 or column < 0 or islower(board[line][column]))
+        if (line > 7 or column < 0)
             break;
 
         if (board[line][column] == 'B' or board[line][column] == 'Q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
@@ -218,11 +339,14 @@ bool is_attacked_by_white(square sq, char board[8][8])
     {
         line--;
         column++;
-        if (line < 0 or column > 7 or islower(board[line][column]))
+        if (line < 0 or column > 7)
             break;
 
         if (board[line][column] == 'B' or board[line][column] == 'Q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
@@ -230,55 +354,70 @@ bool is_attacked_by_white(square sq, char board[8][8])
     {
         line--;
         column--;
-        if (line < 0 or column < 0 or islower(board[line][column]))
+        if (line < 0 or column < 0)
             break;
 
         if (board[line][column] == 'B' or board[line][column] == 'Q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
     while (true)
     {
         column++;
-        if (column > 7 or islower(board[line][column]))
+        if (column > 7)
             break;
 
         if (board[line][column] == 'R' or board[line][column] == 'Q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     column = sq.column;
     while (true)
     {
         column--;
-        if (column < 0 or islower(board[line][column]))
+        if (column < 0)
             break;
 
         if (board[line][column] == 'R' or board[line][column] == 'Q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     column = sq.column;
     while (true)
     {
         line++;
-        if (line > 7 or islower(board[line][column]))
+        if (line > 7)
             break;
 
         if (board[line][column] == 'R' or board[line][column] == 'Q')
             return true;
-    }
 
+        if (board[line][column] != '#')
+            break;
+    }
+    
     line = sq.line;
     while (true)
     {
         line--;
-        if (line < 0 or islower(board[line][column]))
+        if (line < 0)
             break;
 
         if (board[line][column] == 'R' or board[line][column] == 'Q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
@@ -347,11 +486,14 @@ bool is_attacked_by_black(square sq, char board[8][8])
     {
         line++;
         column++;
-        if (line > 7 or column > 7 or isupper(board[line][column]))
+        if (line > 7 or column > 7)
             break;
 
         if (board[line][column] == 'b' or board[line][column] == 'q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
@@ -359,11 +501,14 @@ bool is_attacked_by_black(square sq, char board[8][8])
     {
         line++;
         column--;
-        if (line > 7 or column < 0 or isupper(board[line][column]))
+        if (line > 7 or column < 0)
             break;
 
         if (board[line][column] == 'b' or board[line][column] == 'q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
@@ -371,11 +516,14 @@ bool is_attacked_by_black(square sq, char board[8][8])
     {
         line--;
         column++;
-        if (line < 0 or column > 7 or isupper(board[line][column]))
+        if (line < 0 or column > 7)
             break;
 
         if (board[line][column] == 'b' or board[line][column] == 'q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
@@ -383,55 +531,70 @@ bool is_attacked_by_black(square sq, char board[8][8])
     {
         line--;
         column--;
-        if (line < 0 or column < 0 or isupper(board[line][column]))
+        if (line < 0 or column < 0)
             break;
 
         if (board[line][column] == 'b' or board[line][column] == 'q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
     while (true)
     {
         column++;
-        if (column > 7 or isupper(board[line][column]))
+        if (column > 7)
             break;
 
         if (board[line][column] == 'r' or board[line][column] == 'q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     column = sq.column;
     while (true)
     {
         column--;
-        if (column < 0 or isupper(board[line][column]))
+        if (column < 0)
             break;
 
         if (board[line][column] == 'r' or board[line][column] == 'q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     column = sq.column;
     while (true)
     {
         line++;
-        if (line > 7 or isupper(board[line][column]))
+        if (line > 7)
             break;
 
         if (board[line][column] == 'r' or board[line][column] == 'q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line;
     while (true)
     {
         line--;
-        if (line < 0 or isupper(board[line][column]))
+        if (line < 0)
             break;
 
         if (board[line][column] == 'r' or board[line][column] == 'q')
             return true;
+
+        if (board[line][column] != '#')
+            break;
     }
 
     line = sq.line, column = sq.column;
@@ -462,7 +625,7 @@ bool is_attacked_by_black(square sq, char board[8][8])
     return false;
 }
 
-bool is_illegal(Move move, char board[8][8], bool whites_turn)
+bool is_illegal(Move move, char board[8][8], bool whites_turn) 
 {
     char local_board[8][8];
     memcpy(local_board, board, sizeof(local_board));
@@ -475,7 +638,7 @@ bool is_illegal(Move move, char board[8][8], bool whites_turn)
         {
             if (whites_turn and local_board[i][j] == 'K')
                 return is_attacked_by_black({ i, j }, local_board);
-            if (not whites_turn and local_board[i][j] == 'k')
+            if (not whites_turn and local_board[i][j] == 'k') 
                 return is_attacked_by_white({ i, j }, local_board);
         }
     }
@@ -538,10 +701,20 @@ void add_possible_pawn_moves(square sq, square en_passant_sq, char board[8][8], 
     {
         if (board[line + 1][column] == '#')
         {
-            ret.push_back({ sq, { line + 1, column } });
-            if (board[line + 2][column] == '#' and line == 1)
+            if (line + 1 == 7)
             {
-                ret.push_back({ sq, { line + 2, column } });
+                ret.push_back({ sq, {line + 1, column}, 'q' });
+                ret.push_back({ sq, {line + 1, column}, 'r' });
+                ret.push_back({ sq, {line + 1, column}, 'n' });
+                ret.push_back({ sq, {line + 1, column}, 'b' });
+            }
+            else
+            {
+                ret.push_back({ sq, { line + 1, column } });
+                if (board[line + 2][column] == '#' and line == 1)
+                {
+                    ret.push_back({ sq, { line + 2, column } });
+                }
             }
         }
 
@@ -549,27 +722,55 @@ void add_possible_pawn_moves(square sq, square en_passant_sq, char board[8][8], 
             not is_same_team(board[line][column], board[line + 1][column + 1]) or
             (line + 1 == en_passant_sq.line and column + 1 == en_passant_sq.column)))
         {
-            ret.push_back({ sq, { line + 1, column + 1 } });
+            if (line + 1 == 7)
+            {
+                ret.push_back({ sq, {line + 1, column + 1}, 'q' });
+                ret.push_back({ sq, {line + 1, column + 1}, 'r' });
+                ret.push_back({ sq, {line + 1, column + 1}, 'n' });
+                ret.push_back({ sq, {line + 1, column + 1}, 'b' });
+            }
+            else 
+            {
+                ret.push_back({ sq, { line + 1, column + 1 } });
+            }
         }
 
         if (column != 0 and (board[line + 1][column - 1] != '#' and
             not is_same_team(board[line][column], board[line + 1][column - 1]) or
             (line + 1 == en_passant_sq.line and column - 1 == en_passant_sq.column)))
         {
-            ret.push_back({ sq, { line + 1, column - 1 } });
+            if (line + 1 == 7)
+            {
+                ret.push_back({ sq, {line + 1, column - 1}, 'q' });
+                ret.push_back({ sq, {line + 1, column - 1}, 'r' });
+                ret.push_back({ sq, {line + 1, column - 1}, 'n' });
+                ret.push_back({ sq, {line + 1, column - 1}, 'b' });
+            }
+            else
+            {
+                ret.push_back({ sq, { line + 1, column - 1 } });
+            }
         }
-
-
     }
 
     else if (board[line][column] == 'p')
     {
         if (board[line - 1][column] == '#')
         {
-            ret.push_back({ sq, { line - 1, column } });
-            if (board[line - 2][column] == '#' and line == 6)
+            if (line - 1 == 0)
             {
-                ret.push_back({ sq, { line - 2, column } });
+                ret.push_back({ sq, {line - 1, column}, 'q' });
+                ret.push_back({ sq, {line - 1, column}, 'r' });
+                ret.push_back({ sq, {line - 1, column}, 'n' });
+                ret.push_back({ sq, {line - 1, column}, 'b' });
+            }
+            else
+            {
+                ret.push_back({ sq, { line - 1, column } });
+                if (board[line - 2][column] == '#' and line == 6)
+                {
+                    ret.push_back({ sq, { line - 2, column } });
+                }
             }
         }
 
@@ -577,14 +778,34 @@ void add_possible_pawn_moves(square sq, square en_passant_sq, char board[8][8], 
             not is_same_team(board[line][column], board[line - 1][column + 1]) or
             (line - 1 == en_passant_sq.line and column + 1 == en_passant_sq.column)))
         {
-            ret.push_back({ sq, { line - 1, column + 1 } });
+            if (line - 1 == 0)
+            {
+                ret.push_back({ sq, {line - 1, column + 1}, 'q' });
+                ret.push_back({ sq, {line - 1, column + 1}, 'r' });
+                ret.push_back({ sq, {line - 1, column + 1}, 'n' });
+                ret.push_back({ sq, {line - 1, column + 1}, 'b' });
+            }
+            else
+            {
+                ret.push_back({ sq, { line - 1, column + 1 } });
+            }
         }
 
         if (column != 0 and (board[line - 1][column - 1] != '#' and
             not is_same_team(board[line][column], board[line - 1][column - 1]) or
             (line - 1 == en_passant_sq.line and column - 1 == en_passant_sq.column)))
         {
-            ret.push_back({ sq, { line - 1, column - 1 } });
+            if (line - 1 == 0)
+            {
+                ret.push_back({ sq, {line - 1, column - 1}, 'q' });
+                ret.push_back({ sq, {line - 1, column - 1}, 'r' });
+                ret.push_back({ sq, {line - 1, column - 1}, 'n' });
+                ret.push_back({ sq, {line - 1, column - 1}, 'b' });
+            }
+            else
+            {
+                ret.push_back({ sq, { line - 1, column - 1 } });
+            }
         }
     }
 }
@@ -1006,89 +1227,6 @@ int evaluate(char board[8][8])
     else return black_value - white_value;
 }
 
-/*string bfs_search(int time_limit)
-{
-    //debug_board();
-
-    auto start = high_resolution_clock::now();
-    vector<Move> moves;
-    map<Move, pair<queue<possible_move>, int>> moves_value;
-
-    add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
-
-    for (Move move : moves)
-    {
-        //cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << endl;
-        moves_value[move].second = INF;
-        possible_move pm;
-        pm.move = move;
-        pm.rr = rr;
-        pm.whites_turn = whites_turn;
-        memcpy(pm.local_board, board, sizeof(pm.local_board));
-        moves_value[move].first.push(pm);
-    }
-
-    bool stop = false;
-    while (not stop)
-    {
-        for (Move move : moves)
-        {
-            auto now = high_resolution_clock::now();
-            if (now - start > chrono::milliseconds(time_limit)) { stop = true; break; }
-
-            moves_value[move].second = INF;
-            int number_of_possible_moves = moves_value[move].first.size();
-            if (number_of_possible_moves == 0) moves_value[move].second = checkmate;
-
-            while (number_of_possible_moves--)
-            {
-                possible_move pm = moves_value[move].first.front();
-                moves_value[move].first.pop();
-
-                fix_rock_rights(pm.local_board, pm.move, pm.rr);
-                fix_en_passant_sq(pm.local_board, pm.move, pm.en_passant_sq);
-
-                make_move(pm.move, pm.local_board);
-
-                pm.whites_turn = not pm.whites_turn;
-                moves_value[move].second = min(moves_value[move].second, evaluate(pm.local_board));
-
-                vector<Move> next_moves;
-                add_possible_moves(pm.rr, pm.local_board, pm.whites_turn, pm.en_passant_sq,
-                    next_moves);
-
-                for (Move next_move : next_moves)
-                {
-                    if (is_illegal(next_move, pm.local_board, pm.whites_turn)) continue;
-                    possible_move npm;
-                    npm.move = next_move;
-                    npm.whites_turn = pm.whites_turn;
-                    npm.rr = pm.rr;
-                    memcpy(npm.local_board, pm.local_board, sizeof(npm.local_board));
-                    moves_value[move].first.push(npm);
-                }
-            }
-        }
-    }
-
-    Move bestmove;
-    int bestmove_value;
-    bestmove_value = -INF;
-    for (const auto& move_value : moves_value)
-    {
-        cerr << square_to_notation(move_value.first.from) << " "
-            << square_to_notation(move_value.first.to) << " "
-            << bestmove_value << " " << move_value.second.second << endl;
-        if (bestmove_value < move_value.second.second)
-        {
-            bestmove_value = move_value.second.second;
-            bestmove = move_value.first;
-        }
-    }
-
-    return square_to_notation(bestmove.from) + square_to_notation(bestmove.to);
-}*/
-
 int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_whites_turn, char board[8][8])
 {
     char local_board[8][8];
@@ -1098,8 +1236,18 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
     fix_rock_rights(local_board, move, rr);
     fix_en_passant_sq(local_board, move, en_passant_sq);
 
+    string position_FEN = create_FEN(local_board, local_whites_turn, rr, en_passant_sq);
+    position_count[position_FEN]++;
+
+    if (position_count[position_FEN] == 3)
+    {
+        position_count[position_FEN]--;
+        return not local_whites_turn == whites_turn ? -draw : draw;
+    }
+
     if (depth == 0)
     {
+        position_count[position_FEN]--;
         return evaluate(local_board);
     }
 
@@ -1111,16 +1259,21 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         int best_value = -INF;
         for (Move move : moves)
         {
+            move_path.push_back(move);
             if (is_illegal(move, local_board, local_whites_turn))
             {
                 best_value = max(best_value, -checkmate);
+                move_path.pop_back();
                 continue;
             }
 
             int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, local_whites_turn, local_board);
             best_value = max(best_value, move_value);
+
+            move_path.pop_back();
         }
 
+        position_count[position_FEN]--;
         return best_value;
     }
     else
@@ -1128,16 +1281,21 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         int worst_value = INF;
         for (Move move : moves)
         {
+            move_path.push_back(move);
             if (is_illegal(move, local_board, local_whites_turn))
             {
                 worst_value = min(worst_value, checkmate);
+                move_path.pop_back();
                 continue;
             }
 
             int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, local_whites_turn, local_board);
             worst_value = min(worst_value, move_value);
+
+            move_path.pop_back();
         }
 
+        position_count[position_FEN]--;
         return worst_value;
     }
 }
@@ -1153,7 +1311,9 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
     {
         if (is_illegal(move, board, whites_turn)) continue;
 
+        move_path.push_back(move);
         int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+
         cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
         debug_board(board, move);
         if (bestmove_value < move_value)
@@ -1161,9 +1321,14 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
             bestmove_value = move_value;
             bestmove = move;
         }
+
+        move_path.pop_back();
     }
 
-    return square_to_notation(bestmove.from) + square_to_notation(bestmove.to);
+    if (bestmove.pawn_promotion == '-')
+        return square_to_notation(bestmove.from) + square_to_notation(bestmove.to);
+    else
+        return square_to_notation(bestmove.from) + square_to_notation(bestmove.to) + bestmove.pawn_promotion;
 }
 
 int main() 
@@ -1248,20 +1413,24 @@ int main()
                 }
             }
 
-            string moves;
-            iss >> moves;
-            if (moves == "moves") 
+            string notation;
+            iss >> notation;
+            if (notation == "moves") 
             {
-                while (iss >> moves)
+                while (iss >> notation)
                 {
-                    string here = moves.substr(0, 2);
-                    string there = moves.substr(2, 2);
-                    Move move = { notation_to_square(here), notation_to_square(there) };
+                    square here = notation_to_square(notation.substr(0, 2));
+                    square there = notation_to_square(notation.substr(2, 2));
+                    Move move = { here, there };
+                    if (notation.size() == 5)
+                        move.pawn_promotion = notation[4];
                     fix_rock_rights(board, move, rr);
                     fix_en_passant_sq(board, move, en_passant_sq);
                     make_move(move, board);
+                    move_path.push_back(move);
                     whites_turn = not whites_turn;
                     played_moves++;
+                    position_count[create_FEN(board, whites_turn, rr, en_passant_sq)]++;
                 }
             }
             
