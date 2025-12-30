@@ -10,7 +10,6 @@
 #include <chrono>
 
 using namespace std;
-using namespace std::chrono;
 
 enum rock_rights
 {
@@ -68,14 +67,31 @@ struct possible_move
     square en_passant_sq;
 };
 
+struct timer
+{
+    chrono::steady_clock::time_point start;
+
+    void reset()
+    {
+        start = chrono::steady_clock::now();
+    }
+
+    int elapsed_ms()
+    {
+        return (float) chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start).count();
+    }
+};
+
 char board[8][8];
 bool whites_turn;
 int played_moves = 0;
 int rr;
 square en_passant_sq;
-vector<Move> move_path;
 unordered_map<string, int> position_count;
+bool stop_search = false;
+timer passed_time;
 int INF = INT_MAX;
+float limit_time = INF;
 int checkmate = INF - 1;
 int draw = 10;
 
@@ -95,11 +111,11 @@ string square_to_notation(square sq)
     return string{ static_cast<char>(sq.column + 'a'), static_cast<char>(sq.line + '1') };
 }
 
-string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_sq) 
+string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_sq)
 {
-    string FEN="";
+    string FEN = "";
 
-    for (int line = 0; line < 8; line++) 
+    for (int line = 0; line < 8; line++)
     {
         char empty_count = '0';
 
@@ -109,7 +125,7 @@ string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_
                 empty_count++;
             else
             {
-                if (empty_count != '0') 
+                if (empty_count != '0')
                 {
                     FEN.push_back(empty_count);
                     empty_count = '0';
@@ -119,7 +135,7 @@ string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_
             }
         }
 
-        if (empty_count != '0') 
+        if (empty_count != '0')
             FEN.push_back(empty_count);
 
         FEN.push_back('/');
@@ -147,8 +163,35 @@ string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_
     if (en_passant_sq != square{ -1, -1 })
         FEN += square_to_notation(en_passant_sq);
     else FEN.push_back('-');
-    
+
     return FEN;
+}
+
+void calculate_time(float time, float inc, char board[8][8])
+{
+    float phase_factor = 0, security_factor = 0.7f, importance_factor, estimated_remaining_moves;
+
+    for (int line = 0; line < 8; line++)
+    {
+        for (int column = 0; column < 8; column++)
+        {
+            if (board[line][column] == 'n' or board[line][column] == 'N' or board[line][column] == 'b' or board[line][column] == 'B')
+                phase_factor += 1.f / 24.f;
+            if (board[line][column] == 'r' or board[line][column] == 'R')
+                phase_factor += 2.f / 24.f;
+            if (board[line][column] == 'q' or board[line][column] == 'Q')
+                phase_factor += 4.f / 24.f;
+        }
+    }
+
+    if (phase_factor >= 0.7f)
+        importance_factor = 0.6f, estimated_remaining_moves = 45;
+    else if (phase_factor < 0.7f and phase_factor >= 0.4f)
+        importance_factor = 1.3f, estimated_remaining_moves = 25;
+    else
+        importance_factor = 1.f, estimated_remaining_moves = 10;
+
+    limit_time = (time + estimated_remaining_moves * inc) * security_factor * importance_factor / estimated_remaining_moves;
 }
 
 void make_move(Move move, char(&local_board)[8][8])
@@ -163,7 +206,7 @@ void make_move(Move move, char(&local_board)[8][8])
             local_board[0][5] = 'R';
             local_board[0][4] = '#';
         }
-        else 
+        else
         {
             local_board[0][0] = '#';
             local_board[0][2] = 'K';
@@ -183,7 +226,7 @@ void make_move(Move move, char(&local_board)[8][8])
             local_board[7][5] = 'r';
             local_board[7][4] = '#';
         }
-        else 
+        else
         {
             local_board[7][0] = '#';
             local_board[7][2] = 'k';
@@ -194,14 +237,14 @@ void make_move(Move move, char(&local_board)[8][8])
     }
 
     if (local_board[move.to.line][move.to.column] == '#' and (local_board[move.from.line][move.from.column] == 'P'
-         or local_board[move.from.line][move.from.column] == 'p') and
-        (move.to.column == move.from.column + 1 or move.to.column == move.from.column - 1)) 
+        or local_board[move.from.line][move.from.column] == 'p') and
+        (move.to.column == move.from.column + 1 or move.to.column == move.from.column - 1))
     {
-        if (local_board[move.from.line][move.from.column] == 'P') 
+        if (local_board[move.from.line][move.from.column] == 'P')
         {
             local_board[move.to.line - 1][move.to.column] = '#';
         }
-        else 
+        else
         {
             local_board[move.to.line + 1][move.to.column] = '#';
         }
@@ -405,7 +448,7 @@ bool is_attacked_by_white(square sq, char board[8][8])
         if (board[line][column] != '#')
             break;
     }
-    
+
     line = sq.line;
     while (true)
     {
@@ -625,7 +668,7 @@ bool is_attacked_by_black(square sq, char board[8][8])
     return false;
 }
 
-bool is_illegal(Move move, char board[8][8], bool whites_turn) 
+bool is_illegal(Move move, char board[8][8], bool whites_turn)
 {
     char local_board[8][8];
     memcpy(local_board, board, sizeof(local_board));
@@ -638,7 +681,7 @@ bool is_illegal(Move move, char board[8][8], bool whites_turn)
         {
             if (whites_turn and local_board[i][j] == 'K')
                 return is_attacked_by_black({ i, j }, local_board);
-            if (not whites_turn and local_board[i][j] == 'k') 
+            if (not whites_turn and local_board[i][j] == 'k')
                 return is_attacked_by_white({ i, j }, local_board);
         }
     }
@@ -729,7 +772,7 @@ void add_possible_pawn_moves(square sq, square en_passant_sq, char board[8][8], 
                 ret.push_back({ sq, {line + 1, column + 1}, 'n' });
                 ret.push_back({ sq, {line + 1, column + 1}, 'b' });
             }
-            else 
+            else
             {
                 ret.push_back({ sq, { line + 1, column + 1 } });
             }
@@ -1229,6 +1272,12 @@ int evaluate(char board[8][8])
 
 int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_whites_turn, char board[8][8])
 {
+    if (passed_time.elapsed_ms() > limit_time)
+    {
+        stop_search = true;
+        return 0;
+    }
+
     char local_board[8][8];
     memcpy(local_board, board, sizeof(local_board));
     make_move(move, local_board);
@@ -1259,18 +1308,18 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         int best_value = -INF;
         for (Move move : moves)
         {
-            move_path.push_back(move);
             if (is_illegal(move, local_board, local_whites_turn))
             {
                 best_value = max(best_value, -checkmate);
-                move_path.pop_back();
                 continue;
             }
 
             int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, local_whites_turn, local_board);
-            best_value = max(best_value, move_value);
 
-            move_path.pop_back();
+            if (stop_search)
+                break;
+
+            best_value = max(best_value, move_value);
         }
 
         position_count[position_FEN]--;
@@ -1281,18 +1330,18 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         int worst_value = INF;
         for (Move move : moves)
         {
-            move_path.push_back(move);
             if (is_illegal(move, local_board, local_whites_turn))
             {
                 worst_value = min(worst_value, checkmate);
-                move_path.pop_back();
                 continue;
             }
 
             int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, local_whites_turn, local_board);
-            worst_value = min(worst_value, move_value);
 
-            move_path.pop_back();
+            if (stop_search)
+                break;
+
+            worst_value = min(worst_value, move_value);
         }
 
         position_count[position_FEN]--;
@@ -1300,38 +1349,84 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
     }
 }
 
-string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, char board[8][8])
+string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
+    char board[8][8])
 {
     vector<Move> moves;
     add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
 
-    Move bestmove = { {0, 0}, {1, 1} };
-    int bestmove_value = -INF;
-    for (Move move : moves)
+    if (depth != 0)
     {
-        if (is_illegal(move, board, whites_turn)) continue;
+        Move bestmove = { {0, 0}, {0, 0} };
+        int bestmove_value = -INF;
 
-        move_path.push_back(move);
-        int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
-
-        cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
-        debug_board(board, move);
-        if (bestmove_value < move_value)
+        for (Move move : moves)
         {
-            bestmove_value = move_value;
-            bestmove = move;
+            if (is_illegal(move, board, whites_turn)) continue;
+
+            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+
+            if (bestmove_value < move_value)
+            {
+                bestmove_value = move_value;
+                bestmove = move;
+            }
         }
 
-        move_path.pop_back();
+        if (bestmove.pawn_promotion == '-')
+            return square_to_notation(bestmove.from) + square_to_notation(bestmove.to);
+        else
+            return square_to_notation(bestmove.from) + square_to_notation(bestmove.to) + bestmove.pawn_promotion;
     }
 
-    if (bestmove.pawn_promotion == '-')
-        return square_to_notation(bestmove.from) + square_to_notation(bestmove.to);
     else
-        return square_to_notation(bestmove.from) + square_to_notation(bestmove.to) + bestmove.pawn_promotion;
+    {
+        passed_time.reset();
+        Move last_bestmove = { {0, 0}, {0, 0} };
+        int depth = 1;
+
+        while (passed_time.elapsed_ms() < limit_time)
+        {
+            Move bestmove = { {0, 0}, {0, 0} };
+            int bestmove_value = -INF;
+
+            for (Move move : moves)
+            {
+                if (is_illegal(move, board, whites_turn)) continue;
+
+                int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+
+                if (passed_time.elapsed_ms() > limit_time)
+                {
+                    stop_search = true;
+                    break;
+                }
+
+                if (bestmove_value < move_value)
+                {
+                    bestmove_value = move_value;
+                    bestmove = move;
+                }
+            }
+
+            if (not stop_search)
+            {
+                last_bestmove = bestmove;
+
+                cout << "info depth " << depth
+                    << " time " << passed_time.elapsed_ms() << endl;
+            }
+            depth++;
+        }
+
+        if (last_bestmove.pawn_promotion == '-')
+            return square_to_notation(last_bestmove.from) + square_to_notation(last_bestmove.to);
+        else
+            return square_to_notation(last_bestmove.from) + square_to_notation(last_bestmove.to) + last_bestmove.pawn_promotion;
+    }
 }
 
-int main() 
+int main()
 {
     string line;
 
@@ -1340,29 +1435,29 @@ int main()
         istringstream iss(line);
         string cmd; iss >> cmd;
 
-        if (cmd == "uci") 
+        if (cmd == "uci")
         {
             cout << "id name Bot23" << endl;
             cout << "id author Artifexis" << endl;
             cout << "uciok" << endl;
         }
-        else if (cmd == "isready") 
+        else if (cmd == "isready")
         {
             cout << "readyok" << endl;
         }
-        else if (cmd == "position") 
+        else if (cmd == "position")
         {
             string type;
             iss >> type;
 
-            if (type == "startpos") 
+            if (type == "startpos")
             {
                 reset_board();
                 whites_turn = true;
                 en_passant_sq = { -1, -1 };
                 rr = K | Q | k | q;
             }
-            else 
+            else
             {
                 string FEN;
                 iss >> FEN;
@@ -1370,9 +1465,9 @@ int main()
 
                 string info;
                 int repeat = 5, iinfo;
-                while (repeat--) 
+                while (repeat--)
                 {
-                    if (repeat == 4) 
+                    if (repeat == 4)
                     {
                         iss >> info;
                         if (info == "w")
@@ -1380,10 +1475,10 @@ int main()
                         else
                             whites_turn = false, played_moves = 1;
                     }
-                    else if (repeat == 3) 
+                    else if (repeat == 3)
                     {
                         iss >> info;
-                        for (char x : info) 
+                        for (char x : info)
                         {
                             if (x == 'K')
                                 rr |= K;
@@ -1401,11 +1496,11 @@ int main()
                         if (info.size() == 2)
                             en_passant_sq = { notation_to_square(info) };
                     }
-                    else if (repeat == 1) 
+                    else if (repeat == 1)
                     {
                         iss >> iinfo;
-                    }   
-                    else 
+                    }
+                    else
                     {
                         iss >> iinfo;
                         played_moves += 2 * (iinfo - 1);
@@ -1415,7 +1510,7 @@ int main()
 
             string notation;
             iss >> notation;
-            if (notation == "moves") 
+            if (notation == "moves")
             {
                 while (iss >> notation)
                 {
@@ -1427,22 +1522,22 @@ int main()
                     fix_rock_rights(board, move, rr);
                     fix_en_passant_sq(board, move, en_passant_sq);
                     make_move(move, board);
-                    move_path.push_back(move);
                     whites_turn = not whites_turn;
                     played_moves++;
                     position_count[create_FEN(board, whites_turn, rr, en_passant_sq)]++;
                 }
             }
-            
+
 
             //debug_board();
         }
-        else if (cmd == "go") 
+        else if (cmd == "go")
         {
             string bestmove, info;
-            int wtime = -1, btime = -1, winc = 0, binc = 0, depth = 4, movetime = -1;
-            
-            while (iss >> info) 
+            stop_search = false;
+            int wtime = -1, btime = -1, winc = 0, binc = 0, depth = 0, movetime = 0;
+
+            while (iss >> info)
             {
                 if (info == "wtime") iss >> wtime;
                 else if (info == "btime") iss >> btime;
@@ -1452,11 +1547,21 @@ int main()
                 else if (info == "movetime") iss >> movetime;
             }
 
+            if (movetime != 0)
+                limit_time = movetime;
+            else if (depth == 0) 
+            {
+                if (whites_turn)
+                    calculate_time(wtime, winc, board);
+                else
+                    calculate_time(btime, binc, board);
+            }
+
             bestmove = move_generator(depth, rr, en_passant_sq, whites_turn, board);
-            
+
             cout << "bestmove " << bestmove << endl;
         }
-        else if (cmd == "quit") 
+        else if (cmd == "quit")
         {
             break;
         }
