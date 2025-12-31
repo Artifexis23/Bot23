@@ -1280,6 +1280,8 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         stop_search = true;
         return 0;
     }
+    
+    bool king_is_attacked = is_illegal(move, board, not local_whites_turn);
 
     char local_board[8][8];
     memcpy(local_board, board, sizeof(local_board));
@@ -1326,6 +1328,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         }
 
         position_count[position_FEN]--;
+        if (best_value == -checkmate and not king_is_attacked) return -draw;
         return best_value;
     }
     else
@@ -1348,6 +1351,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         }
 
         position_count[position_FEN]--;
+        if (worst_value == checkmate and not king_is_attacked) return draw;
         return worst_value;
     }
 }
