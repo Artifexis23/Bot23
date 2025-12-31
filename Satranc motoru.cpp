@@ -8,6 +8,8 @@
 #include <climits>
 #include <sstream>
 #include <chrono>
+#include <thread>
+#include <atomic>
 
 using namespace std;
 
@@ -76,9 +78,9 @@ struct timer
         start = chrono::steady_clock::now();
     }
 
-    int elapsed_ms()
+    float elapsed_ms()
     {
-        return (float) chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start).count();
+        return (float)chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start).count();
     }
 };
 
@@ -88,7 +90,8 @@ int played_moves = 0;
 int rr;
 square en_passant_sq;
 unordered_map<string, int> position_count;
-bool stop_search = false;
+atomic<bool> stop_search;
+thread search_thread;
 timer passed_time;
 int INF = INT_MAX;
 float limit_time = INF;
@@ -1272,7 +1275,7 @@ int evaluate(char board[8][8])
 
 int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_whites_turn, char board[8][8])
 {
-    if (passed_time.elapsed_ms() > limit_time)
+    if (passed_time.elapsed_ms() > limit_time or stop_search)
     {
         stop_search = true;
         return 0;
@@ -1349,8 +1352,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
     }
 }
 
-string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
-    char board[8][8])
+void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, char board[8][8])
 {
     vector<Move> moves;
     add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
@@ -1366,6 +1368,9 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
 
             int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
+            cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
+            debug_board(board, move);
+
             if (bestmove_value < move_value)
             {
                 bestmove_value = move_value;
@@ -1374,9 +1379,10 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
         }
 
         if (bestmove.pawn_promotion == '-')
-            return square_to_notation(bestmove.from) + square_to_notation(bestmove.to);
+            cout << "bestmove " << square_to_notation(bestmove.from) + square_to_notation(bestmove.to) << endl;
         else
-            return square_to_notation(bestmove.from) + square_to_notation(bestmove.to) + bestmove.pawn_promotion;
+            cout << "bestmove " << square_to_notation(bestmove.from) + square_to_notation(bestmove.to) +
+            bestmove.pawn_promotion << endl;
     }
 
     else
@@ -1385,7 +1391,7 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
         Move last_bestmove = { {0, 0}, {0, 0} };
         int depth = 1;
 
-        while (passed_time.elapsed_ms() < limit_time)
+        while (passed_time.elapsed_ms() < limit_time and not stop_search)
         {
             Move bestmove = { {0, 0}, {0, 0} };
             int bestmove_value = -INF;
@@ -1396,7 +1402,7 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
 
                 int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
-                if (passed_time.elapsed_ms() > limit_time)
+                if (passed_time.elapsed_ms() > limit_time or stop_search)
                 {
                     stop_search = true;
                     break;
@@ -1420,9 +1426,10 @@ string move_generator(int depth, int rr, square en_passant_sq, bool whites_turn,
         }
 
         if (last_bestmove.pawn_promotion == '-')
-            return square_to_notation(last_bestmove.from) + square_to_notation(last_bestmove.to);
+            cout << "bestmove " << square_to_notation(last_bestmove.from) + square_to_notation(last_bestmove.to) << endl;
         else
-            return square_to_notation(last_bestmove.from) + square_to_notation(last_bestmove.to) + last_bestmove.pawn_promotion;
+            cout << "bestmove " << square_to_notation(last_bestmove.from) + square_to_notation(last_bestmove.to) +
+            last_bestmove.pawn_promotion << endl;
     }
 }
 
@@ -1455,6 +1462,8 @@ int main()
                 reset_board();
                 whites_turn = true;
                 en_passant_sq = { -1, -1 };
+                position_count.clear();
+                stop_search = false;
                 rr = K | Q | k | q;
             }
             else
@@ -1533,9 +1542,13 @@ int main()
         }
         else if (cmd == "go")
         {
-            string bestmove, info;
-            stop_search = false;
-            int wtime = -1, btime = -1, winc = 0, binc = 0, depth = 0, movetime = 0;
+            if (search_thread.joinable())
+                search_thread.join();
+
+            string info;
+            bool infinite = false;
+            int depth = 0;
+            float movetime = 0, wtime = -1, btime = -1, winc = 0, binc = 0;
 
             while (iss >> info)
             {
@@ -1545,11 +1558,14 @@ int main()
                 else if (info == "binc") iss >> binc;
                 else if (info == "depth") iss >> depth;
                 else if (info == "movetime") iss >> movetime;
+                else if (info == "infinite") infinite = true;
             }
 
             if (movetime != 0)
-                limit_time = movetime;
-            else if (depth == 0) 
+                limit_time = (float) movetime;
+            else if (infinite)
+                limit_time = (float) INF;
+            else if (depth == 0)
             {
                 if (whites_turn)
                     calculate_time(wtime, winc, board);
@@ -1557,12 +1573,19 @@ int main()
                     calculate_time(btime, binc, board);
             }
 
-            bestmove = move_generator(depth, rr, en_passant_sq, whites_turn, board);
-
-            cout << "bestmove " << bestmove << endl;
+            search_thread = thread(move_generator, depth, rr, en_passant_sq, whites_turn, ref(board));
+        }
+        else if (cmd == "stop")
+        {
+            stop_search = true;
         }
         else if (cmd == "quit")
         {
+            stop_search = true;
+
+            if (search_thread.joinable())
+                search_thread.join();
+
             break;
         }
     }
