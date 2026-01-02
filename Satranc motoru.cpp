@@ -93,6 +93,7 @@ unordered_map<string, int> position_count;
 atomic<bool> stop_search;
 thread search_thread;
 timer passed_time;
+float visited_node_count = 0;
 int INF = INT_MAX;
 float limit_time = INF;
 int checkmate = INF - 1;
@@ -112,6 +113,17 @@ square notation_to_square(string notation)
 string square_to_notation(square sq)
 {
     return string{ static_cast<char>(sq.column + 'a'), static_cast<char>(sq.line + '1') };
+}
+
+Move notation_to_move(string notation)
+{
+    if (notation.size() == 4) return { notation_to_square(notation.substr(0, 2)), notation_to_square(notation.substr(2, 2)) };
+    return { notation_to_square(notation.substr(0, 2)), notation_to_square(notation.substr(2, 2)), notation[4] };
+}
+
+string move_to_notation(Move move)
+{
+    return square_to_notation(move.from) + square_to_notation(move.to);
 }
 
 string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_sq)
@@ -1275,12 +1287,14 @@ int evaluate(char board[8][8])
 
 int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_whites_turn, char board[8][8])
 {
+    visited_node_count++;
+
     if (passed_time.elapsed_ms() > limit_time or stop_search)
     {
         stop_search = true;
         return 0;
     }
-    
+
     bool king_is_attacked = is_illegal(move, board, not local_whites_turn);
 
     char local_board[8][8];
@@ -1315,6 +1329,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         {
             if (is_illegal(move, local_board, local_whites_turn))
             {
+                visited_node_count++;
                 best_value = max(best_value, -checkmate);
                 continue;
             }
@@ -1338,6 +1353,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         {
             if (is_illegal(move, local_board, local_whites_turn))
             {
+                visited_node_count++;
                 worst_value = min(worst_value, checkmate);
                 continue;
             }
@@ -1361,6 +1377,8 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
     vector<Move> moves;
     add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
 
+    visited_node_count += moves.size();
+
     if (depth != 0)
     {
         Move bestmove = { {0, 0}, {0, 0} };
@@ -1382,11 +1400,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
             }
         }
 
-        if (bestmove.pawn_promotion == '-')
-            cout << "bestmove " << square_to_notation(bestmove.from) + square_to_notation(bestmove.to) << endl;
-        else
-            cout << "bestmove " << square_to_notation(bestmove.from) + square_to_notation(bestmove.to) +
-            bestmove.pawn_promotion << endl;
+        cout << "bestmove " << move_to_notation(bestmove) << endl;
     }
 
     else
@@ -1397,6 +1411,10 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
         while (passed_time.elapsed_ms() < limit_time and not stop_search)
         {
+            visited_node_count = moves.size();
+            timer depth_time;
+            depth_time.reset();
+
             Move bestmove = { {0, 0}, {0, 0} };
             int bestmove_value = -INF;
 
@@ -1424,16 +1442,15 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
                 last_bestmove = bestmove;
 
                 cout << "info depth " << depth
-                    << " time " << passed_time.elapsed_ms() << endl;
+                    << " time " << passed_time.elapsed_ms()
+                    << " nodes " << visited_node_count
+                    << " NPS " << visited_node_count * 1000 / depth_time.elapsed_ms()
+                    << " score cp " << bestmove_value << endl;
             }
             depth++;
         }
 
-        if (last_bestmove.pawn_promotion == '-')
-            cout << "bestmove " << square_to_notation(last_bestmove.from) + square_to_notation(last_bestmove.to) << endl;
-        else
-            cout << "bestmove " << square_to_notation(last_bestmove.from) + square_to_notation(last_bestmove.to) +
-            last_bestmove.pawn_promotion << endl;
+        cout << "bestmove " << move_to_notation(last_bestmove) << endl;
     }
 }
 
@@ -1527,11 +1544,7 @@ int main()
             {
                 while (iss >> notation)
                 {
-                    square here = notation_to_square(notation.substr(0, 2));
-                    square there = notation_to_square(notation.substr(2, 2));
-                    Move move = { here, there };
-                    if (notation.size() == 5)
-                        move.pawn_promotion = notation[4];
+                    Move move = notation_to_move(notation);
                     fix_rock_rights(board, move, rr);
                     fix_en_passant_sq(board, move, en_passant_sq);
                     make_move(move, board);
@@ -1566,9 +1579,9 @@ int main()
             }
 
             if (movetime != 0)
-                limit_time = (float) movetime;
+                limit_time = (float)movetime;
             else if (infinite)
-                limit_time = (float) INF;
+                limit_time = (float)INF;
             else if (depth == 0)
             {
                 if (whites_turn)
