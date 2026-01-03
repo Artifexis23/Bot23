@@ -125,6 +125,9 @@
   <ItemGroup>
     <ClCompile Include="Satranc motoru.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Book.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
