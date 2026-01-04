@@ -130,7 +130,8 @@ Move notation_to_move(string notation)
 
 string move_to_notation(Move move)
 {
-    return square_to_notation(move.from) + square_to_notation(move.to);
+    if (move.pawn_promotion == '-') return square_to_notation(move.from) + square_to_notation(move.to);
+    return square_to_notation(move.from) + square_to_notation(move.to) + move.pawn_promotion;
 }
 
 string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_sq)
@@ -1434,7 +1435,6 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
         
         if (bestmove != nullmove)
         {
-            cout << "info book move" << endl;
             cout << "bestmove " << move_to_notation(bestmove) << endl;
             return;
         }
@@ -1442,8 +1442,6 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
     vector<Move> moves;
     add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
-
-    visited_node_count += moves.size();
 
     if (depth != 0)
     {
@@ -1453,7 +1451,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
         for (Move move : moves)
         {
             if (is_illegal(move, board, whites_turn)) continue;
-
+            
             int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
             cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
@@ -1489,7 +1487,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
                 for (Move move : moves)
                 {
                     if (is_illegal(move, board, whites_turn)) continue;
-
+                    
                     int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
                     if (passed_time.elapsed_ms() > limit_time or stop_search)
@@ -1500,6 +1498,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
                     if (bestmove_value < move_value)
                     {
+                        
                         bestmove_value = move_value;
                         bestmove = move;
                     }
@@ -1602,6 +1601,8 @@ int main()
             }
             else
             {
+                stop_search = false;
+                position_count.clear();
                 string FEN;
                 iss >> FEN;
                 set_board(FEN);
@@ -1692,9 +1693,9 @@ int main()
             }
 
             if (movetime != 0)
-                limit_time = (float)movetime;
+                limit_time = (float) movetime;
             else if (infinite)
-                limit_time = (float)INF;
+                limit_time = (float) INF;
             else if (depth == 0)
             {
                 if (whites_turn)
