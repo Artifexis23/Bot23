@@ -88,6 +88,73 @@ struct timer
     }
 };
 
+int pawn_table[8][8] = 
+{
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {  10,   5,   5, -10, -10,   5,   5,  10 },
+    {   5,   0,   0,  10,  10,   0,   0,   5 },
+    {   0,   0,   5,  20,  20,   5,   0,   0 },
+    {   0,   5,  10,  20,  20,  10,   5,   0 },
+    {  15,  20,  30,  30,  30,  30,  20,  15 },
+    {  50,  50,  50,  50,  50,  50,  50,  50 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 }
+};
+int knight_table[8][8] = 
+{
+    { -30, -20, -10, -10, -10, -10, -20, -30 },
+    { -20, -10,   0,   5,   5,   0, -10, -20 },
+    { -10,   0,  10,   5,   5,  10,   0, -10 },
+    { -10,   0,  15,  20,  20,  15,   0, -10 },
+    { -10,   0,  15,  20,  20,  15,   0, -10 },
+    { -10,   0,  10,  15,  15,  10,   0, -10 },
+    { -20, -10,   0,   0,   0,   0, -10, -20 },
+    { -30, -20, -10, -10, -10, -10, -20, -30 }
+};
+int bishop_table[8][8] =
+{
+    { -20, -10,   0,   0,   0,   0, -10, -20 },
+    { -10,  10,   0,   5,   5,   0,  10, -10 },
+    {  -5,   0,   5,  10,  10,   5,   0,  -5 },
+    {   0,   5,  15,  20,  20,  15,   0,   0 },
+    {   0,   5,  10,  20,  20,  10,   0,   0 },
+    {  -5,   0,   5,   5,   5,   5,   0,  -5 },
+    { -20, -15, -15, -10, -10, -15, -15, -20 },
+    { -30, -20, -20, -20, -20, -20, -20, -30 }
+};
+int rook_table[8][8] =
+{
+    {   0,   0,   5,  10,  10,   5,   0,   0 },
+    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
+    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
+    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
+    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
+    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
+    {   5,  10,  10,  10,  10,  10,  10,   5 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 }
+};
+int queen_table[8][8] =
+{
+    { -20, -10,   5,  10,  10,   5, -10, -20 },
+    { -10, -10,   0,   5,   5,   0, -10, -10 },
+    { -10,   0,   0,   5,   5,   0,   0, -10 },
+    {  -5,   0,  10,  20,  20,  10,   0,  -5 },
+    {  -5,   0,  10,  20,  20,  10,   0,  -5 },
+    { -10,   0,   5,  10,  10,   5,   0, -10 },
+    { -10,   0,   0,   0,   0,   0,   0, -10 },
+    { -20, -10,  -5,   0,   0,  -5, -10, -20 }
+};
+int king_table[8][8] =
+{
+    {  20,  30,  30, -10,   0, -10,  30,  20 },
+    { -20, -20, -20, -20, -20, -20, -20, -20 },
+    { -30, -30, -30, -30, -30, -30, -30, -30 },
+    { -50, -50, -50, -50, -50, -50, -50, -50 },
+    { -50, -50, -50, -50, -50, -50, -50, -50 },
+    { -50, -50, -50, -50, -50, -50, -50, -50 },
+    { -50, -50, -50, -50, -50, -50, -50, -50 },
+    { -50, -50, -50, -50, -50, -50, -50, -50 }
+};
+
 char board[8][8];
 bool whites_turn;
 int played_moves = 0;
@@ -771,13 +838,15 @@ void fix_rock_rights(char board[8][8], Move move, int& rr)
 
 void fix_en_passant_sq(char board[8][8], Move move, square& en_passant_sq)
 {
-    if (board[move.from.line][move.from.column] == 'P' and
-        move.from.line == 1 and move.to.line == 3)
+    if (board[move.from.line][move.from.column] == 'P' and move.from.line == 1 and move.to.line == 3
+        and (move.to.column < 7 and board[move.to.line][move.to.column + 1] == 'p' or
+            move.to.column > 0 and board[move.to.line][move.to.column - 1] == 'p'))
     {
         en_passant_sq = { 2, move.from.column };
     }
-    else if (board[move.from.line][move.from.column] == 'p' and
-        move.from.line == 6 and move.to.line == 4)
+    else if (board[move.from.line][move.from.column] == 'p' and move.from.line == 6 and move.to.line == 4
+        and (move.to.column < 7 and board[move.to.line][move.to.column + 1] == 'P' or
+            move.to.column > 0 and board[move.to.line][move.to.column - 1] == 'P'))
     {
         en_passant_sq = { 5, move.from.column };
     }
@@ -1295,25 +1364,29 @@ int evaluate(char board[8][8])
         for (int j = 0; j < 8; j++)
         {
             if (board[i][j] == 'P')
-                white_value += 100;
+                white_value += 100 + pawn_table[i][j];
             else if (board[i][j] == 'N')
-                white_value += 300;
+                white_value += 300 + knight_table[i][j];
             else if (board[i][j] == 'B')
-                white_value += 350;
+                white_value += 350 + bishop_table[i][j];
             else if (board[i][j] == 'R')
-                white_value += 500;
+                white_value += 500 + rook_table[i][j];
             else if (board[i][j] == 'Q')
-                white_value += 900;
+                white_value += 900 + queen_table[i][j];
+            else if (board[i][j] == 'K')
+                white_value += king_table[i][j];
             else if (board[i][j] == 'p')
-                black_value += 100;
+                black_value += 100 + pawn_table[7 - i][j];
             else if (board[i][j] == 'n')
-                black_value += 300;
+                black_value += 300 + knight_table[7 - i][j];
             else if (board[i][j] == 'b')
-                black_value += 350;
+                black_value += 350 + bishop_table[7 - i][j];
             else if (board[i][j] == 'r')
-                black_value += 500;
+                black_value += 500 + rook_table[7 - i][j];
             else if (board[i][j] == 'q')
-                black_value += 900;
+                black_value += 900 + queen_table[7 - i][j];
+            else if (board[i][j] == 'k')
+                black_value += king_table[7 - i][j];
         }
     }
 
@@ -1428,6 +1501,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
 
 void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, char board[8][8])
 {
+    //cerr << evaluate(board) << endl;
     if (not book_finished)
     {
         //cerr << create_FEN(board, whites_turn, rr, en_passant_sq) << endl;
