@@ -3,6 +3,8 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <cmath>
+#include <iomanip>
 #include <unordered_map>
 #include <cstring>
 #include <climits>
@@ -88,18 +90,18 @@ struct timer
     }
 };
 
-int pawn_table[8][8] = 
+int pawn_table[8][8] =
 {
     {   0,   0,   0,   0,   0,   0,   0,   0 },
     {  10,   5,   5, -10, -10,   5,   5,  10 },
     {   5,   0,   0,  10,  10,   0,   0,   5 },
-    {   0,   0,   5,  20,  20,   5,   0,   0 },
+    {   0,   0,   0,  20,  20,   0,   0,   0 },
     {   0,   5,  10,  20,  20,  10,   5,   0 },
     {  15,  20,  30,  30,  30,  30,  20,  15 },
     {  50,  50,  50,  50,  50,  50,  50,  50 },
     {   0,   0,   0,   0,   0,   0,   0,   0 }
 };
-int knight_table[8][8] = 
+int knight_table[8][8] =
 {
     { -30, -20, -10, -10, -10, -10, -20, -30 },
     { -20, -10,   0,   5,   5,   0, -10, -20 },
@@ -112,14 +114,14 @@ int knight_table[8][8] =
 };
 int bishop_table[8][8] =
 {
-    { -20, -10,   0,   0,   0,   0, -10, -20 },
+    { -20, -10, -10, -10, -10, -10, -10, -20 },
     { -10,  10,   0,   5,   5,   0,  10, -10 },
-    {  -5,   0,   5,  10,  10,   5,   0,  -5 },
-    {   0,   5,  15,  20,  20,  15,   0,   0 },
-    {   0,   5,  10,  20,  20,  10,   0,   0 },
-    {  -5,   0,   5,   5,   5,   5,   0,  -5 },
-    { -20, -15, -15, -10, -10, -15, -15, -20 },
-    { -30, -20, -20, -20, -20, -20, -20, -30 }
+    { -10,   0,   5,  10,  10,   5,   0, -10 },
+    { -10,   5,  15,  20,  20,  15,   5, -10 },
+    { -10,   5,  10,  20,  20,  10,   5, -10 },
+    { -10,  10,  10,  10,  10,  10,  10, -10 },
+    { -10,   0,   0,   0,   0,   0,   0, -10 },
+    { -20, -10, -10, -10, -10, -10, -10, -20 }
 };
 int rook_table[8][8] =
 {
@@ -145,8 +147,8 @@ int queen_table[8][8] =
 };
 int king_table[8][8] =
 {
-    {  20,  30,  30, -10,   0, -10,  30,  20 },
-    { -20, -20, -20, -20, -20, -20, -20, -20 },
+    {  20,  30,  30, -10,   0,  10,  30,  20 },
+    {  20,  20,   0, -20, -20,   0,  20,  20 },
     { -30, -30, -30, -30, -30, -30, -30, -30 },
     { -50, -50, -50, -50, -50, -50, -50, -50 },
     { -50, -50, -50, -50, -50, -50, -50, -50 },
@@ -168,6 +170,7 @@ Move nullmove = { {-1, -1}, {-1, -1} };
 thread search_thread;
 timer passed_time;
 float visited_node_count = 0;
+int in_depth;
 int INF = INT_MAX;
 float limit_time = (float) INF;
 int checkmate = INF - 1;
@@ -176,7 +179,7 @@ int draw = 10;
 bool is_same_team(char piece1, char piece2)
 {
     if (piece1 == '#' or piece2 == '#') return false;
-    return (isupper(piece1) and isupper(piece2)) or (islower(piece1) and islower(piece2));
+    return isupper(piece1) == isupper(piece2);
 }
 
 square notation_to_square(string notation)
@@ -261,12 +264,12 @@ string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_
 void load_book()
 {
     ifstream file("Book.txt");
-    
+
     string line;
     while (getline(file, line))
     {
         istringstream take(line);
-        
+
         if (line.empty()) continue;
         if (line[0] == '#') continue;
 
@@ -975,50 +978,42 @@ void add_possible_pawn_moves(square sq, square en_passant_sq, char board[8][8], 
 void add_possible_knight_moves(square sq, char board[8][8], vector<Move>& ret)
 {
     int line = sq.line, column = sq.column;
-    if (line < 7 and column < 6 and (board[line + 1][column + 2] == '#'
-        or not is_same_team(board[line][column], board[line + 1][column + 2])))
+    if (line < 7 and column < 6 and not is_same_team(board[line][column], board[line + 1][column + 2]))
     {
         ret.push_back({ sq, { line + 1, column + 2 } });
     }
 
-    if (line > 0 and column < 6 and (board[line - 1][column + 2] == '#'
-        or not is_same_team(board[line][column], board[line - 1][column + 2])))
+    if (line > 0 and column < 6 and not is_same_team(board[line][column], board[line - 1][column + 2]))
     {
         ret.push_back({ sq, { line - 1, column + 2 } });
     }
 
-    if (line < 6 and column < 7 and (board[line + 2][column + 1] == '#'
-        or not is_same_team(board[line][column], board[line + 2][column + 1])))
+    if (line < 6 and column < 7 and not is_same_team(board[line][column], board[line + 2][column + 1]))
     {
         ret.push_back({ sq, { line + 2, column + 1 } });
     }
 
-    if (line < 6 and column > 0 and (board[line + 2][column - 1] == '#'
-        or not is_same_team(board[line][column], board[line + 2][column - 1])))
+    if (line < 6 and column > 0 and not is_same_team(board[line][column], board[line + 2][column - 1]))
     {
         ret.push_back({ sq, { line + 2, column - 1 } });
     }
 
-    if (line < 7 and column > 1 and (board[line + 1][column - 2] == '#'
-        or not is_same_team(board[line][column], board[line + 1][column - 2])))
+    if (line < 7 and column > 1 and not is_same_team(board[line][column], board[line + 1][column - 2]))
     {
         ret.push_back({ sq, { line + 1, column - 2 } });
     }
 
-    if (line > 0 and column > 1 and (board[line - 1][column - 2] == '#'
-        or not is_same_team(board[line][column], board[line - 1][column - 2])))
+    if (line > 0 and column > 1 and not is_same_team(board[line][column], board[line - 1][column - 2]))
     {
         ret.push_back({ sq, { line - 1, column - 2 } });
     }
 
-    if (line > 1 and column < 7 and (board[line - 2][column + 1] == '#'
-        or not is_same_team(board[line][column], board[line - 2][column + 1])))
+    if (line > 1 and column < 7 and not is_same_team(board[line][column], board[line - 2][column + 1]))
     {
         ret.push_back({ sq, { line - 2, column + 1 } });
     }
 
-    if (line > 1 and column > 0 and (board[line - 2][column - 1] == '#'
-        or not is_same_team(board[line][column], board[line - 2][column - 1])))
+    if (line > 1 and column > 0 and not is_same_team(board[line][column], board[line - 2][column - 1]))
     {
         ret.push_back({ sq, { line - 2, column - 1 } });
     }
@@ -1031,8 +1026,7 @@ void add_possible_bishop_moves(square sq, char board[8][8], vector<Move>& ret)
     {
         line++;
         column++;
-        if (line > 7 or column > 7 or
-            is_same_team(board[line][column], board[sq.line][sq.column])) break;
+        if (line > 7 or column > 7 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
         ret.push_back({ sq, { line, column } });
         if (board[line][column] != '#') break;
     }
@@ -1042,8 +1036,7 @@ void add_possible_bishop_moves(square sq, char board[8][8], vector<Move>& ret)
     {
         line++;
         column--;
-        if (line > 7 or column < 0 or
-            is_same_team(board[line][column], board[sq.line][sq.column])) break;
+        if (line > 7 or column < 0 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
         ret.push_back({ sq, { line, column } });
         if (board[line][column] != '#') break;
     }
@@ -1053,8 +1046,7 @@ void add_possible_bishop_moves(square sq, char board[8][8], vector<Move>& ret)
     {
         line--;
         column++;
-        if (line < 0 or column > 7 or
-            is_same_team(board[line][column], board[sq.line][sq.column])) break;
+        if (line < 0 or column > 7 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
         ret.push_back({ sq, { line, column } });
         if (board[line][column] != '#') break;
     }
@@ -1064,8 +1056,7 @@ void add_possible_bishop_moves(square sq, char board[8][8], vector<Move>& ret)
     {
         line--;
         column--;
-        if (line < 0 or column < 0 or
-            is_same_team(board[line][column], board[sq.line][sq.column])) break;
+        if (line < 0 or column < 0 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
         ret.push_back({ sq, { line, column } });
         if (board[line][column] != '#') break;
     }
@@ -1117,8 +1108,7 @@ void add_possible_queen_moves(square sq, char board[8][8], vector<Move>& ret)
     {
         line++;
         column++;
-        if (line > 7 or column > 7 or
-            is_same_team(board[line][column], board[sq.line][sq.column])) break;
+        if (line > 7 or column > 7 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
         ret.push_back({ sq, { line, column } });
         if (board[line][column] != '#') break;
     }
@@ -1128,8 +1118,7 @@ void add_possible_queen_moves(square sq, char board[8][8], vector<Move>& ret)
     {
         line++;
         column--;
-        if (line > 7 or column < 0 or
-            is_same_team(board[line][column], board[sq.line][sq.column])) break;
+        if (line > 7 or column < 0 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
         ret.push_back({ sq, { line, column } });
         if (board[line][column] != '#') break;
     }
@@ -1139,8 +1128,7 @@ void add_possible_queen_moves(square sq, char board[8][8], vector<Move>& ret)
     {
         line--;
         column++;
-        if (line < 0 or column > 7 or
-            is_same_team(board[line][column], board[sq.line][sq.column])) break;
+        if (line < 0 or column > 7 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
         ret.push_back({ sq, { line, column } });
         if (board[line][column] != '#') break;
     }
@@ -1150,8 +1138,7 @@ void add_possible_queen_moves(square sq, char board[8][8], vector<Move>& ret)
     {
         line--;
         column--;
-        if (line < 0 or column < 0 or
-            is_same_team(board[line][column], board[sq.line][sq.column])) break;
+        if (line < 0 or column < 0 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
         ret.push_back({ sq, { line, column } });
         if (board[line][column] != '#') break;
     }
@@ -1416,11 +1403,13 @@ Move play_from_book(string position_FEN)
 
 int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_whites_turn, char board[8][8])
 {
+    in_depth++;
     visited_node_count++;
 
     if (passed_time.elapsed_ms() > limit_time or stop_search)
     {
         stop_search = true;
+        in_depth--;
         return 0;
     }
 
@@ -1438,12 +1427,14 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
 
     if (position_count[position_FEN] == 3)
     {
+        in_depth--;
         position_count[position_FEN]--;
         return local_whites_turn ? -draw : draw;
     }
 
     if (depth == 0)
     {
+        in_depth--;
         position_count[position_FEN]--;
         return evaluate(local_board);
     }
@@ -1459,7 +1450,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
             if (is_illegal(move, local_board, local_whites_turn))
             {
                 visited_node_count++;
-                best_value = max(best_value, -checkmate);
+                best_value = max(best_value, -checkmate + in_depth);
                 continue;
             }
 
@@ -1470,9 +1461,10 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
 
             best_value = max(best_value, move_value);
         }
-
+        
+        in_depth--;
         position_count[position_FEN]--;
-        if (best_value == -checkmate and not king_is_attacked) return -draw;
+        if (best_value == -checkmate + in_depth + 1 and not king_is_attacked) return -draw;
         return best_value;
     }
     else
@@ -1483,7 +1475,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
             if (is_illegal(move, local_board, local_whites_turn))
             {
                 visited_node_count++;
-                best_value = min(best_value, checkmate);
+                best_value = min(best_value, checkmate - in_depth);
                 continue;
             }
 
@@ -1495,19 +1487,22 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
             best_value = min(best_value, move_value);
         }
 
+        in_depth--;
         position_count[position_FEN]--;
-        if (best_value == checkmate and not king_is_attacked) return draw;
+        if (best_value == checkmate - in_depth - 1 and not king_is_attacked) return draw;
         return best_value;
     }
 }
 
 void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, char board[8][8])
 {
+    in_depth = 0;
+
     if (not book_finished)
     {
         //cerr << create_FEN(board, whites_turn, rr, en_passant_sq) << endl;
         Move bestmove = play_from_book(create_FEN(board, whites_turn, rr, en_passant_sq));
-        
+
         if (bestmove != nullmove)
         {
             cout << "bestmove " << move_to_notation(bestmove) << endl;
@@ -1521,7 +1516,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
     if (depth != 0)
     {
         Move bestmove = nullmove;
-        
+
         if (whites_turn)
         {
             int bestmove_value = -INF;
@@ -1556,7 +1551,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
             for (Move move : moves)
             {
-                if (is_illegal(move, board, whites_turn)) 
+                if (is_illegal(move, board, whites_turn))
                 {
                     if (bestmove_value > checkmate)
                     {
@@ -1601,7 +1596,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
                 for (Move move : moves)
                 {
-                    if (is_illegal(move, board, whites_turn)) 
+                    if (is_illegal(move, board, whites_turn))
                     {
                         if (bestmove_value < -checkmate)
                         {
@@ -1610,7 +1605,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
                         }
                         continue;
                     }
-                    
+
                     int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
                     if (passed_time.elapsed_ms() > limit_time or stop_search)
@@ -1621,7 +1616,6 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
                     if (bestmove_value < move_value)
                     {
-                        
                         bestmove_value = move_value;
                         bestmove = move;
                     }
@@ -1631,7 +1625,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
                 {
                     last_bestmove = bestmove;
 
-                    cout << "info depth " << depth
+                    cout << fixed << setprecision(0) << "info depth " << depth
                         << " time " << passed_time.elapsed_ms()
                         << " nodes " << visited_node_count
                         << " NPS " << visited_node_count * 1000 / depth_time.elapsed_ms()
@@ -1653,7 +1647,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
                 for (Move move : moves)
                 {
-                    if (is_illegal(move, board, whites_turn)) 
+                    if (is_illegal(move, board, whites_turn))
                     {
                         if (bestmove_value > checkmate)
                         {
@@ -1682,7 +1676,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
                 {
                     last_bestmove = bestmove;
 
-                    cout << "info depth " << depth
+                    cout << fixed << setprecision(0) << "info depth " << depth
                         << " time " << passed_time.elapsed_ms()
                         << " nodes " << visited_node_count
                         << " NPS " << visited_node_count * 1000 / depth_time.elapsed_ms()
@@ -1824,9 +1818,9 @@ int main()
             }
 
             if (movetime != 0)
-                limit_time = (float) movetime;
+                limit_time = (float)movetime;
             else if (infinite)
-                limit_time = (float) INF;
+                limit_time = (float)INF;
             else if (depth == 0)
             {
                 if (whites_turn)
