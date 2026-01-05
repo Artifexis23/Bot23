@@ -170,7 +170,7 @@ timer passed_time;
 float visited_node_count = 0;
 int INF = INT_MAX;
 float limit_time = (float) INF;
-int checkmate = INF;
+int checkmate = INF - 1;
 int draw = 10;
 
 bool is_same_team(char piece1, char piece2)
@@ -1459,6 +1459,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
             if (is_illegal(move, local_board, local_whites_turn))
             {
                 visited_node_count++;
+                best_value = max(best_value, -checkmate);
                 continue;
             }
 
@@ -1482,6 +1483,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
             if (is_illegal(move, local_board, local_whites_turn))
             {
                 visited_node_count++;
+                best_value = min(best_value, checkmate);
                 continue;
             }
 
@@ -1501,7 +1503,6 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
 
 void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, char board[8][8])
 {
-    //cerr << evaluate(board) << endl;
     if (not book_finished)
     {
         //cerr << create_FEN(board, whites_turn, rr, en_passant_sq) << endl;
@@ -1520,21 +1521,61 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
     if (depth != 0)
     {
         Move bestmove = nullmove;
-        int bestmove_value = -INF;
-
-        for (Move move : moves)
+        
+        if (whites_turn)
         {
-            if (is_illegal(move, board, whites_turn)) continue;
-            
-            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+            int bestmove_value = -INF;
 
-            cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
-            debug_board(board, move);
-
-            if (bestmove_value < move_value)
+            for (Move move : moves)
             {
-                bestmove_value = move_value;
-                bestmove = move;
+                if (is_illegal(move, board, whites_turn))
+                {
+                    if (bestmove_value < -checkmate)
+                    {
+                        bestmove_value = -checkmate;
+                        bestmove = move;
+                    }
+                    continue;
+                }
+
+                int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+
+                cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
+                debug_board(board, move);
+
+                if (bestmove_value < move_value)
+                {
+                    bestmove_value = move_value;
+                    bestmove = move;
+                }
+            }
+        }
+        else
+        {
+            int bestmove_value = INF;
+
+            for (Move move : moves)
+            {
+                if (is_illegal(move, board, whites_turn)) 
+                {
+                    if (bestmove_value > checkmate)
+                    {
+                        bestmove_value = checkmate;
+                        bestmove = move;
+                    }
+                    continue;
+                }
+
+                int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+
+                cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
+                debug_board(board, move);
+
+                if (bestmove_value > move_value)
+                {
+                    bestmove_value = move_value;
+                    bestmove = move;
+                }
             }
         }
 
@@ -1560,7 +1601,15 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
                 for (Move move : moves)
                 {
-                    if (is_illegal(move, board, whites_turn)) continue;
+                    if (is_illegal(move, board, whites_turn)) 
+                    {
+                        if (bestmove_value < -checkmate)
+                        {
+                            bestmove_value = -checkmate;
+                            bestmove = move;
+                        }
+                        continue;
+                    }
                     
                     int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
@@ -1604,7 +1653,15 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
                 for (Move move : moves)
                 {
-                    if (is_illegal(move, board, whites_turn)) continue;
+                    if (is_illegal(move, board, whites_turn)) 
+                    {
+                        if (bestmove_value > checkmate)
+                        {
+                            bestmove_value = checkmate;
+                            bestmove = move;
+                        }
+                        continue;
+                    }
 
                     int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
