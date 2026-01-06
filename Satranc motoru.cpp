@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <string>
+#include <array>
 #include <vector>
 #include <queue>
 #include <map>
@@ -90,78 +91,78 @@ struct timer
     }
 };
 
-int pawn_table[8][8] =
+const int pawn_table[8][8] =
 {
-    {   0,   0,   0,   0,   0,   0,   0,   0 },
-    {  10,   5,   5, -10, -10,   5,   5,  10 },
-    {   5,   0,   0,  10,  10,   0,   0,   5 },
-    {   0,   0,   0,  20,  20,   0,   0,   0 },
-    {   0,   5,  10,  20,  20,  10,   5,   0 },
-    {  15,  20,  30,  30,  30,  30,  20,  15 },
-    {  50,  50,  50,  50,  50,  50,  50,  50 },
-    {   0,   0,   0,   0,   0,   0,   0,   0 }
+    0,   0,   0,   0,   0,   0,   0,   0,
+   10,   5,   5, -10, -10,   5,   5,  10,
+    5,   0,   0,  10,  10,   0,   0,   5,
+    0,   0,   0,  20,  20,   0,   0,   0,
+    0,   5,  10,  20,  20,  10,   5,   0,
+   15,  20,  30,  30,  30,  30,  20,  15,
+   50,  50,  50,  50,  50,  50,  50,  50,
+    0,   0,   0,   0,   0,   0,   0,   0
 };
-int knight_table[8][8] =
+const int knight_table[8][8] =
 {
-    { -30, -20, -10, -10, -10, -10, -20, -30 },
-    { -20, -10,   0,   5,   5,   0, -10, -20 },
-    { -10,   0,  10,   5,   5,  10,   0, -10 },
-    { -10,   0,  15,  20,  20,  15,   0, -10 },
-    { -10,   0,  15,  20,  20,  15,   0, -10 },
-    { -10,   0,  10,  15,  15,  10,   0, -10 },
-    { -20, -10,   0,   0,   0,   0, -10, -20 },
-    { -30, -20, -10, -10, -10, -10, -20, -30 }
+  -30, -20, -10, -10, -10, -10, -20, -30,
+  -20, -10,   0,   5,   5,   0, -10, -20,
+  -10,   0,  10,   5,   5,  10,   0, -10,
+  -10,   0,  15,  20,  20,  15,   0, -10,
+  -10,   0,  15,  20,  20,  15,   0, -10,
+  -10,   0,  10,  15,  15,  10,   0, -10,
+  -20, -10,   0,   0,   0,   0, -10, -20,
+  -30, -20, -10, -10, -10, -10, -20, -30
 };
-int bishop_table[8][8] =
+const int bishop_table[8][8] =
 {
-    { -20, -10, -10, -10, -10, -10, -10, -20 },
-    { -10,  10,   0,   5,   5,   0,  10, -10 },
-    { -10,   0,   5,  10,  10,   5,   0, -10 },
-    { -10,   5,  15,  20,  20,  15,   5, -10 },
-    { -10,   5,  10,  20,  20,  10,   5, -10 },
-    { -10,  10,  10,  10,  10,  10,  10, -10 },
-    { -10,   0,   0,   0,   0,   0,   0, -10 },
-    { -20, -10, -10, -10, -10, -10, -10, -20 }
+  -20, -10, -10, -10, -10, -10, -10, -20,
+  -10,  10,   0,   5,   5,   0,  10, -10,
+  -10,   0,   5,  10,  10,   5,   0, -10,
+  -10,   5,  15,  20,  20,  15,   5, -10,
+  -10,   5,  10,  20,  20,  10,   5, -10,
+  -10,  10,  10,  10,  10,  10,  10, -10,
+  -10,   0,   0,   0,   0,   0,   0, -10,
+  -20, -10, -10, -10, -10, -10, -10, -20
 };
-int rook_table[8][8] =
+const int rook_table[8][8] =
 {
-    {   0,   0,   5,  10,  10,   5,   0,   0 },
-    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
-    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
-    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
-    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
-    {  -5,   0,   0,   0,   0,   0,   0,  -5 },
-    {   5,  10,  10,  10,  10,  10,  10,   5 },
-    {   0,   0,   0,   0,   0,   0,   0,   0 }
+    0,   0,   5,  10,  10,   5,   0,   0,
+   -5,   0,   0,   0,   0,   0,   0,  -5,
+   -5,   0,   0,   0,   0,   0,   0,  -5,
+   -5,   0,   0,   0,   0,   0,   0,  -5,
+   -5,   0,   0,   0,   0,   0,   0,  -5,
+   -5,   0,   0,   0,   0,   0,   0,  -5,
+    5,  10,  10,  10,  10,  10,  10,   5,
+    0,   0,   0,   0,   0,   0,   0,   0
 };
-int queen_table[8][8] =
+const int queen_table[8][8] =
 {
-    { -20, -10,   5,  10,  10,   5, -10, -20 },
-    { -10, -10,   0,   5,   5,   0, -10, -10 },
-    { -10,   0,   0,   5,   5,   0,   0, -10 },
-    {  -5,   0,  10,  20,  20,  10,   0,  -5 },
-    {  -5,   0,  10,  20,  20,  10,   0,  -5 },
-    { -10,   0,   5,  10,  10,   5,   0, -10 },
-    { -10,   0,   0,   0,   0,   0,   0, -10 },
-    { -20, -10,  -5,   0,   0,  -5, -10, -20 }
+  -20, -10,   5,  10,  10,   5, -10, -20,
+  -10, -10,   0,   5,   5,   0, -10, -10,
+  -10,   0,   0,   5,   5,   0,   0, -10,
+   -5,   0,  10,  20,  20,  10,   0,  -5,
+   -5,   0,  10,  20,  20,  10,   0,  -5,
+  -10,   0,   5,  10,  10,   5,   0, -10,
+  -10,   0,   0,   0,   0,   0,   0, -10,
+  -20, -10,  -5,   0,   0,  -5, -10, -20
 };
-int king_table[8][8] =
+const int king_table[8][8] =
 {
-    {  20,  30,  30, -10,   0,  10,  30,  20 },
-    {  20,  20,   0, -20, -20,   0,  20,  20 },
-    { -30, -30, -30, -30, -30, -30, -30, -30 },
-    { -50, -50, -50, -50, -50, -50, -50, -50 },
-    { -50, -50, -50, -50, -50, -50, -50, -50 },
-    { -50, -50, -50, -50, -50, -50, -50, -50 },
-    { -50, -50, -50, -50, -50, -50, -50, -50 },
-    { -50, -50, -50, -50, -50, -50, -50, -50 }
+   20,  30,  20, -10,   0,  10,  30,  20,
+   20,  20,   0, -20, -20,   0,  20,  20,
+  -30, -30, -30, -30, -30, -30, -30, -30,
+  -50, -50, -50, -50, -50, -50, -50, -50,
+  -50, -50, -50, -50, -50, -50, -50, -50,
+  -50, -50, -50, -50, -50, -50, -50, -50,
+  -50, -50, -50, -50, -50, -50, -50, -50,
+  -50, -50, -50, -50, -50, -50, -50, -50
 };
 
-char board[8][8];
-bool whites_turn;
+array<array<char, 8>, 8> global_board;
+bool global_whites_turn;
 int played_moves = 0;
-int rr;
-square en_passant_sq;
+int global_rr;
+square global_en_passant_sq;
 unordered_map<string, int> position_count;
 unordered_map<string, vector<Book_Move>> opening_book;
 atomic<bool> stop_search;
@@ -172,7 +173,7 @@ timer passed_time;
 float visited_node_count = 0;
 int in_depth;
 int INF = INT_MAX;
-float limit_time = (float) INF;
+float limit_time = (float)INF;
 int checkmate = INF - 1;
 int draw = 10;
 
@@ -182,29 +183,29 @@ bool is_same_team(char piece1, char piece2)
     return isupper(piece1) == isupper(piece2);
 }
 
-square notation_to_square(string notation)
+square notation_to_square(const string& notation)
 {
     return { notation[1] - '1', notation[0] - 'a' };
 }
 
-string square_to_notation(square sq)
+string square_to_notation(square& sq)
 {
     return string{ static_cast<char>(sq.column + 'a'), static_cast<char>(sq.line + '1') };
 }
 
-Move notation_to_move(string notation)
+Move notation_to_move(string& notation)
 {
     if (notation.size() == 4) return { notation_to_square(notation.substr(0, 2)), notation_to_square(notation.substr(2, 2)) };
     return { notation_to_square(notation.substr(0, 2)), notation_to_square(notation.substr(2, 2)), notation[4] };
 }
 
-string move_to_notation(Move move)
+string move_to_notation(Move& move)
 {
     if (move.pawn_promotion == '-') return square_to_notation(move.from) + square_to_notation(move.to);
     return square_to_notation(move.from) + square_to_notation(move.to) + move.pawn_promotion;
 }
 
-string create_FEN(char board[8][8], bool whites_turn, int rr, square en_passant_sq)
+string create_FEN(array<array<char, 8>, 8>& board, bool whites_turn, int rr, square& en_passant_sq)
 {
     string FEN = "";
 
@@ -287,7 +288,7 @@ void load_book()
     }
 }
 
-void calculate_time(float time, float inc, char board[8][8])
+void calculate_time(float time, float inc, array<array<char, 8>, 8>& board)
 {
     float phase_factor = 0, security_factor = 0.7f, importance_factor, estimated_remaining_moves;
 
@@ -314,127 +315,126 @@ void calculate_time(float time, float inc, char board[8][8])
     limit_time = (time + estimated_remaining_moves * inc) * security_factor * importance_factor / estimated_remaining_moves;
 }
 
-void make_move(Move move, char(&local_board)[8][8])
+void make_move(Move& move, array<array<char, 8>, 8>& board)
 {
-    if (local_board[move.from.line][move.from.column] == 'K' and move.from.line == 0
+    if (board[move.from.line][move.from.column] == 'K' and move.from.line == 0
         and move.from.column == 4 and move.to.line == 0 and move.to.column % 4 == 2)
     {
         if (move.to.column == 6)
         {
-            local_board[0][7] = '#';
-            local_board[0][6] = 'K';
-            local_board[0][5] = 'R';
-            local_board[0][4] = '#';
+            board[0][7] = '#';
+            board[0][6] = 'K';
+            board[0][5] = 'R';
+            board[0][4] = '#';
         }
         else
         {
-            local_board[0][0] = '#';
-            local_board[0][2] = 'K';
-            local_board[0][3] = 'R';
-            local_board[0][4] = '#';
+            board[0][0] = '#';
+            board[0][2] = 'K';
+            board[0][3] = 'R';
+            board[0][4] = '#';
         }
         return;
     }
 
-    else if (local_board[move.from.line][move.from.column] == 'k' and move.from.line == 7
+    else if (board[move.from.line][move.from.column] == 'k' and move.from.line == 7
         and move.from.column == 4 and move.to.line == 7 and move.to.column % 4 == 2)
     {
         if (move.to.column == 6)
         {
-            local_board[7][7] = '#';
-            local_board[7][6] = 'k';
-            local_board[7][5] = 'r';
-            local_board[7][4] = '#';
+            board[7][7] = '#';
+            board[7][6] = 'k';
+            board[7][5] = 'r';
+            board[7][4] = '#';
         }
         else
         {
-            local_board[7][0] = '#';
-            local_board[7][2] = 'k';
-            local_board[7][3] = 'r';
-            local_board[7][4] = '#';
+            board[7][0] = '#';
+            board[7][2] = 'k';
+            board[7][3] = 'r';
+            board[7][4] = '#';
         }
         return;
     }
 
-    if (local_board[move.to.line][move.to.column] == '#' and (local_board[move.from.line][move.from.column] == 'P'
-        or local_board[move.from.line][move.from.column] == 'p') and
+    if (board[move.to.line][move.to.column] == '#' and (board[move.from.line][move.from.column] == 'P'
+        or board[move.from.line][move.from.column] == 'p') and
         (move.to.column == move.from.column + 1 or move.to.column == move.from.column - 1))
     {
-        if (local_board[move.from.line][move.from.column] == 'P')
+        if (board[move.from.line][move.from.column] == 'P')
         {
-            local_board[move.to.line - 1][move.to.column] = '#';
+            board[move.to.line - 1][move.to.column] = '#';
         }
         else
         {
-            local_board[move.to.line + 1][move.to.column] = '#';
+            board[move.to.line + 1][move.to.column] = '#';
         }
     }
 
-    if (local_board[move.from.line][move.from.column] == 'P' and move.to.line == 7)
+    if (board[move.from.line][move.from.column] == 'P' and move.to.line == 7)
     {
         if (move.pawn_promotion == 'q')
         {
-            local_board[move.to.line][move.to.column] = 'Q';
+            board[move.to.line][move.to.column] = 'Q';
         }
         else if (move.pawn_promotion == 'r')
         {
-            local_board[move.to.line][move.to.column] = 'R';
+            board[move.to.line][move.to.column] = 'R';
         }
         else if (move.pawn_promotion == 'n')
         {
-            local_board[move.to.line][move.to.column] = 'N';
+            board[move.to.line][move.to.column] = 'N';
         }
         else
         {
-            local_board[move.to.line][move.to.column] = 'B';
+            board[move.to.line][move.to.column] = 'B';
         }
-        local_board[move.from.line][move.from.column] = '#';
+        board[move.from.line][move.from.column] = '#';
         return;
     }
 
-    if (local_board[move.from.line][move.from.column] == 'p' and move.to.line == 0)
+    if (board[move.from.line][move.from.column] == 'p' and move.to.line == 0)
     {
         if (move.pawn_promotion == 'q')
         {
-            local_board[move.to.line][move.to.column] = 'q';
+            board[move.to.line][move.to.column] = 'q';
         }
         else if (move.pawn_promotion == 'r')
         {
-            local_board[move.to.line][move.to.column] = 'r';
+            board[move.to.line][move.to.column] = 'r';
         }
         else if (move.pawn_promotion == 'n')
         {
-            local_board[move.to.line][move.to.column] = 'n';
+            board[move.to.line][move.to.column] = 'n';
         }
         else
         {
-            local_board[move.to.line][move.to.column] = 'b';
+            board[move.to.line][move.to.column] = 'b';
         }
-        local_board[move.from.line][move.from.column] = '#';
+        board[move.from.line][move.from.column] = '#';
         return;
     }
 
-    local_board[move.to.line][move.to.column] = local_board[move.from.line][move.from.column];
-    local_board[move.from.line][move.from.column] = '#';
+    board[move.to.line][move.to.column] = board[move.from.line][move.from.column];
+    board[move.from.line][move.from.column] = '#';
 }
 
-void debug_board(char board[8][8], Move move) {
-    char local_board[8][8];
-    memcpy(local_board, board, sizeof(local_board));
-    make_move(move, local_board);
-    cerr << "DEBUG Board (whites_turn=" << whites_turn << "):" << endl;
+void debug_board(array<array<char, 8>, 8>& board, Move& move)
+{
+    make_move(move, board);
+    cerr << "DEBUG Board (whites_turn=" << global_whites_turn << "):" << endl;
     for (int i = 7; i >= 0; i--) {
         cerr << i + 1 << " ";
         for (int j = 0; j < 8; j++) {
-            if (local_board[i][j] == '#') cerr << ". ";
-            else cerr << local_board[i][j] << " ";
+            if (board[i][j] == '#') cerr << ". ";
+            else cerr << board[i][j] << " ";
         }
         cerr << endl;
     }
     cerr << "  a b c d e f g h" << endl;
 }
 
-bool is_attacked_by_white(square sq, char board[8][8])
+bool is_attacked_by_white(const square& sq, array<array<char, 8>, 8>& board)
 {
     int line = sq.line, column = sq.column;
 
@@ -611,7 +611,7 @@ bool is_attacked_by_white(square sq, char board[8][8])
     return false;
 }
 
-bool is_attacked_by_black(square sq, char board[8][8])
+bool is_attacked_by_black(const square& sq, array<array<char, 8>, 8>& board)
 {
     int line = sq.line, column = sq.column;
 
@@ -788,26 +788,23 @@ bool is_attacked_by_black(square sq, char board[8][8])
     return false;
 }
 
-bool is_illegal(Move move, char board[8][8], bool whites_turn)
+bool is_illegal(Move& move, array<array<char, 8>, 8> board, bool whites_turn)
 {
-    char local_board[8][8];
-    memcpy(local_board, board, sizeof(local_board));
-    make_move(move, local_board);
-    //debug_board(local_board);
+    make_move(move, board);
 
     for (int i = 0; i < 8; i++)
     {
         for (int j = 0; j < 8; j++)
         {
-            if (whites_turn and local_board[i][j] == 'K')
-                return is_attacked_by_black({ i, j }, local_board);
-            if (not whites_turn and local_board[i][j] == 'k')
-                return is_attacked_by_white({ i, j }, local_board);
+            if (whites_turn and board[i][j] == 'K')
+                return is_attacked_by_black({ i, j }, board);
+            if (not whites_turn and board[i][j] == 'k')
+                return is_attacked_by_white({ i, j }, board);
         }
     }
 }
 
-void fix_rock_rights(char board[8][8], Move move, int& rr)
+void fix_rock_rights(array<array<char, 8>, 8>& board, Move& move, int& rr)
 {
     if (board[move.from.line][move.from.column] == 'K')
         rr &= ~(K | Q);
@@ -839,7 +836,7 @@ void fix_rock_rights(char board[8][8], Move move, int& rr)
     }
 }
 
-void fix_en_passant_sq(char board[8][8], Move move, square& en_passant_sq)
+void fix_en_passant_sq(array<array<char, 8>, 8>& board, Move& move, square& en_passant_sq)
 {
     if (board[move.from.line][move.from.column] == 'P' and move.from.line == 1 and move.to.line == 3
         and (move.to.column < 7 and board[move.to.line][move.to.column + 1] == 'p' or
@@ -859,7 +856,7 @@ void fix_en_passant_sq(char board[8][8], Move move, square& en_passant_sq)
     }
 }
 
-void add_possible_pawn_moves(square sq, square en_passant_sq, char board[8][8], vector<Move>& ret)
+void add_possible_pawn_moves(const square& sq, square& en_passant_sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     if (board[line][column] == 'P')
@@ -975,7 +972,7 @@ void add_possible_pawn_moves(square sq, square en_passant_sq, char board[8][8], 
     }
 }
 
-void add_possible_knight_moves(square sq, char board[8][8], vector<Move>& ret)
+void add_possible_knight_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     if (line < 7 and column < 6 and not is_same_team(board[line][column], board[line + 1][column + 2]))
@@ -1019,7 +1016,7 @@ void add_possible_knight_moves(square sq, char board[8][8], vector<Move>& ret)
     }
 }
 
-void add_possible_bishop_moves(square sq, char board[8][8], vector<Move>& ret)
+void add_possible_bishop_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     while (true)
@@ -1062,7 +1059,7 @@ void add_possible_bishop_moves(square sq, char board[8][8], vector<Move>& ret)
     }
 }
 
-void add_possible_rook_moves(square sq, char board[8][8], vector<Move>& ret)
+void add_possible_rook_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     while (true)
@@ -1101,7 +1098,7 @@ void add_possible_rook_moves(square sq, char board[8][8], vector<Move>& ret)
     }
 }
 
-void add_possible_queen_moves(square sq, char board[8][8], vector<Move>& ret)
+void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     while (true)
@@ -1180,7 +1177,7 @@ void add_possible_queen_moves(square sq, char board[8][8], vector<Move>& ret)
     }
 }
 
-void add_possible_king_moves(square sq, char board[8][8], vector<Move>& ret)
+void add_possible_king_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     if (column < 7 and not is_same_team(board[line][column + 1], board[line][column]))
@@ -1228,7 +1225,7 @@ void add_possible_king_moves(square sq, char board[8][8], vector<Move>& ret)
     }
 }
 
-void add_possible_rock_moves(int rr, char board[8][8], bool whites_turn, vector<Move>& ret)
+void add_possible_rock_moves(int rr, array<array<char, 8>, 8>& board, bool whites_turn, vector<Move>& ret)
 {
     if (whites_turn)
     {
@@ -1267,9 +1264,9 @@ void add_possible_rock_moves(int rr, char board[8][8], bool whites_turn, vector<
     }
 }
 
-void add_possible_moves(int rr, char local_board[8][8], bool whites_turn, square en_passant_sq, vector<Move>& moves)
+void add_possible_moves(int rr, array<array<char, 8>, 8>& board, bool whites_turn, square& en_passant_sq, vector<Move>& moves)
 {
-    add_possible_rock_moves(rr, local_board, whites_turn, moves);
+    add_possible_rock_moves(rr, board, whites_turn, moves);
 
     for (int i = 0; i < 8; i++)
     {
@@ -1277,33 +1274,33 @@ void add_possible_moves(int rr, char local_board[8][8], bool whites_turn, square
         {
             if (whites_turn)
             {
-                if (local_board[i][j] == 'P')
-                    add_possible_pawn_moves({ i, j }, en_passant_sq, local_board, moves);
-                else if (local_board[i][j] == 'N')
-                    add_possible_knight_moves({ i, j }, local_board, moves);
-                else if (local_board[i][j] == 'B')
-                    add_possible_bishop_moves({ i, j }, local_board, moves);
-                else if (local_board[i][j] == 'R')
-                    add_possible_rook_moves({ i, j }, local_board, moves);
-                else if (local_board[i][j] == 'Q')
-                    add_possible_queen_moves({ i, j }, local_board, moves);
-                else if (local_board[i][j] == 'K')
-                    add_possible_king_moves({ i, j }, local_board, moves);
+                if (board[i][j] == 'P')
+                    add_possible_pawn_moves({ i, j }, en_passant_sq, board, moves);
+                else if (board[i][j] == 'N')
+                    add_possible_knight_moves({ i, j }, board, moves);
+                else if (board[i][j] == 'B')
+                    add_possible_bishop_moves({ i, j }, board, moves);
+                else if (board[i][j] == 'R')
+                    add_possible_rook_moves({ i, j }, board, moves);
+                else if (board[i][j] == 'Q')
+                    add_possible_queen_moves({ i, j }, board, moves);
+                else if (board[i][j] == 'K')
+                    add_possible_king_moves({ i, j }, board, moves);
             }
             else
             {
-                if (local_board[i][j] == 'p')
-                    add_possible_pawn_moves({ i, j }, en_passant_sq, local_board, moves);
-                else if (local_board[i][j] == 'n')
-                    add_possible_knight_moves({ i, j }, local_board, moves);
-                else if (local_board[i][j] == 'b')
-                    add_possible_bishop_moves({ i, j }, local_board, moves);
-                else if (local_board[i][j] == 'r')
-                    add_possible_rook_moves({ i, j }, local_board, moves);
-                else if (local_board[i][j] == 'q')
-                    add_possible_queen_moves({ i, j }, local_board, moves);
-                else if (local_board[i][j] == 'k')
-                    add_possible_king_moves({ i, j }, local_board, moves);
+                if (board[i][j] == 'p')
+                    add_possible_pawn_moves({ i, j }, en_passant_sq, board, moves);
+                else if (board[i][j] == 'n')
+                    add_possible_knight_moves({ i, j }, board, moves);
+                else if (board[i][j] == 'b')
+                    add_possible_bishop_moves({ i, j }, board, moves);
+                else if (board[i][j] == 'r')
+                    add_possible_rook_moves({ i, j }, board, moves);
+                else if (board[i][j] == 'q')
+                    add_possible_queen_moves({ i, j }, board, moves);
+                else if (board[i][j] == 'k')
+                    add_possible_king_moves({ i, j }, board, moves);
             }
         }
     }
@@ -1311,22 +1308,33 @@ void add_possible_moves(int rr, char local_board[8][8], bool whites_turn, square
 
 void reset_board()
 {
-    board[0][0] = 'R'; board[7][0] = 'r';   //R N B Q K B N R
-    board[0][7] = 'R'; board[7][7] = 'r';   //P P P P P P P P
-    board[0][1] = 'N'; board[7][1] = 'n';   //# # # # # # # # 
-    board[0][6] = 'N'; board[7][6] = 'n';   //# # # # # # # #
-    board[0][2] = 'B'; board[7][2] = 'b';   //# # # # # # # # 
-    board[0][5] = 'B'; board[7][5] = 'b';   //# # # # # # # #
-    board[0][3] = 'Q'; board[7][3] = 'q';   //p p p p p p p p
-    board[0][4] = 'K'; board[7][4] = 'k';   //r n b q k b n r
+    global_board[0][0] = 'R'; global_board[7][0] = 'r';   //R N B Q K B N R
+    global_board[0][7] = 'R'; global_board[7][7] = 'r';   //P P P P P P P P
+    global_board[0][1] = 'N'; global_board[7][1] = 'n';   //# # # # # # # # 
+    global_board[0][6] = 'N'; global_board[7][6] = 'n';   //# # # # # # # #
+    global_board[0][2] = 'B'; global_board[7][2] = 'b';   //# # # # # # # # 
+    global_board[0][5] = 'B'; global_board[7][5] = 'b';   //# # # # # # # #
+    global_board[0][3] = 'Q'; global_board[7][3] = 'q';   //p p p p p p p p
+    global_board[0][4] = 'K'; global_board[7][4] = 'k';   //r n b q k b n r
 
-    for (int i = 0; i < 8; i++) { board[1][i] = 'P'; board[6][i] = 'p'; }
-    for (int i = 2; i < 6; i++) { for (int j = 0; j < 8; j++) { board[i][j] = '#'; } }
+    for (int i = 0; i < 8; i++) { global_board[1][i] = 'P'; global_board[6][i] = 'p'; }
+    for (int i = 2; i < 6; i++) { for (int j = 0; j < 8; j++) { global_board[i][j] = '#'; } }
+
+    global_whites_turn = true;
+    global_en_passant_sq = { -1, -1 };
+    position_count.clear();
+    stop_search = false;
+    global_rr = K | Q | k | q;
 }
 
-void set_board(string FEN)
+void set_board(istringstream& iss)
 {
-    for (int i = 0; i < 8; i++) { for (int j = 0; j < 8; j++) { board[i][j] = '#'; } }
+    stop_search = false;
+    position_count.clear();
+    string FEN;
+    iss >> FEN;
+
+    for (int i = 0; i < 8; i++) { for (int j = 0; j < 8; j++) { global_board[i][j] = '#'; } }
 
     int line = 7, column = 0;
     for (char i : FEN)
@@ -1336,13 +1344,57 @@ void set_board(string FEN)
         else if (i < '9')
             column += i - '0';
         else
-            board[line][column] = i, column++;
+            global_board[line][column] = i, column++;
 
         column %= 8;
     }
+
+    string info;
+    int iinfo;
+    for (int i = 0; i < 5; i++)
+    {
+        if (i == 0)
+        {
+            iss >> info;
+            if (info == "w")
+                global_whites_turn = true;
+            else
+                global_whites_turn = false, played_moves = 1;
+        }
+        else if (i == 1)
+        {
+            iss >> info;
+            for (char x : info)
+            {
+                if (x == 'K')
+                    global_rr |= K;
+                if (x == 'Q')
+                    global_rr |= Q;
+                if (x == 'k')
+                    global_rr |= k;
+                if (x == 'q')
+                    global_rr |= q;
+            }
+        }
+        else if (i == 2)
+        {
+            iss >> info;
+            if (info.size() == 2)
+                global_en_passant_sq = { notation_to_square(info) };
+        }
+        else if (i == 3)
+        {
+            iss >> iinfo;
+        }
+        else
+        {
+            iss >> iinfo;
+            played_moves += 2 * (iinfo - 1);
+        }
+    }
 }
 
-int evaluate(char board[8][8])
+int evaluate(array<array<char, 8>, 8>& board)
 {
     int white_value = 0;
     int black_value = 0;
@@ -1380,7 +1432,7 @@ int evaluate(char board[8][8])
     return white_value - black_value;
 }
 
-Move play_from_book(string position_FEN)
+Move play_from_book(const string& position_FEN)
 {
     if (opening_book[position_FEN].size() == 0)
     {
@@ -1401,7 +1453,7 @@ Move play_from_book(string position_FEN)
     return opening_book[position_FEN][dist(gen)].move;
 }
 
-int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_whites_turn, char board[8][8])
+int dfs_search(int depth, int rr, square en_passant_sq, Move& move, bool whites_turn, array<array<char, 8>, 8> board)
 {
     in_depth++;
     visited_node_count++;
@@ -1413,55 +1465,53 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         return 0;
     }
 
-    bool king_is_attacked = is_illegal(move, board, not local_whites_turn);
+    bool king_is_attacked = is_illegal(move, board, not whites_turn);
 
-    char local_board[8][8];
-    memcpy(local_board, board, sizeof(local_board));
-    make_move(move, local_board);
-    local_whites_turn = not local_whites_turn;
-    fix_rock_rights(local_board, move, rr);
-    fix_en_passant_sq(local_board, move, en_passant_sq);
+    fix_rock_rights(board, move, rr);
+    fix_en_passant_sq(board, move, en_passant_sq);
+    make_move(move, board);
+    whites_turn = not whites_turn;
 
-    string position_FEN = create_FEN(local_board, local_whites_turn, rr, en_passant_sq);
+    string position_FEN = create_FEN(board, whites_turn, rr, en_passant_sq);
     position_count[position_FEN]++;
 
     if (position_count[position_FEN] == 3)
     {
         in_depth--;
         position_count[position_FEN]--;
-        return local_whites_turn ? -draw : draw;
+        return whites_turn ? -draw : draw;
     }
 
     if (depth == 0)
     {
         in_depth--;
         position_count[position_FEN]--;
-        return evaluate(local_board);
+        return evaluate(board);
     }
 
     vector<Move> moves;
-    add_possible_moves(rr, local_board, local_whites_turn, en_passant_sq, moves);
+    add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
 
-    if (local_whites_turn)
+    if (whites_turn)
     {
         int best_value = -INF;
         for (Move move : moves)
         {
-            if (is_illegal(move, local_board, local_whites_turn))
+            if (is_illegal(move, board, whites_turn))
             {
                 visited_node_count++;
                 best_value = max(best_value, -checkmate + in_depth);
                 continue;
             }
 
-            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, local_whites_turn, local_board);
+            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
             if (stop_search)
                 break;
 
             best_value = max(best_value, move_value);
         }
-        
+
         in_depth--;
         position_count[position_FEN]--;
         if (best_value == -checkmate + in_depth + 1 and not king_is_attacked) return -draw;
@@ -1472,14 +1522,14 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
         int best_value = INF;
         for (Move move : moves)
         {
-            if (is_illegal(move, local_board, local_whites_turn))
+            if (is_illegal(move, board, whites_turn))
             {
                 visited_node_count++;
                 best_value = min(best_value, checkmate - in_depth);
                 continue;
             }
 
-            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, local_whites_turn, local_board);
+            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
             if (stop_search)
                 break;
@@ -1494,13 +1544,12 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move move, bool local_wh
     }
 }
 
-void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, char board[8][8])
+void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, array<array<char, 8>, 8> board)
 {
     in_depth = 0;
 
     if (not book_finished)
     {
-        //cerr << create_FEN(board, whites_turn, rr, en_passant_sq) << endl;
         Move bestmove = play_from_book(create_FEN(board, whites_turn, rr, en_passant_sq));
 
         if (bestmove != nullmove)
@@ -1535,8 +1584,8 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
                 int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
-                cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
-                debug_board(board, move);
+                //cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
+                //debug_board(board, move);
 
                 if (bestmove_value < move_value)
                 {
@@ -1563,8 +1612,8 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, c
 
                 int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
 
-                cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
-                debug_board(board, move);
+                //cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
+                //debug_board(board, move);
 
                 if (bestmove_value > move_value)
                 {
@@ -1718,63 +1767,10 @@ int main()
             if (type == "startpos")
             {
                 reset_board();
-                whites_turn = true;
-                en_passant_sq = { -1, -1 };
-                position_count.clear();
-                stop_search = false;
-                rr = K | Q | k | q;
             }
             else
             {
-                stop_search = false;
-                position_count.clear();
-                string FEN;
-                iss >> FEN;
-                set_board(FEN);
-
-                string info;
-                int repeat = 5, iinfo;
-                while (repeat--)
-                {
-                    if (repeat == 4)
-                    {
-                        iss >> info;
-                        if (info == "w")
-                            whites_turn = true;
-                        else
-                            whites_turn = false, played_moves = 1;
-                    }
-                    else if (repeat == 3)
-                    {
-                        iss >> info;
-                        for (char x : info)
-                        {
-                            if (x == 'K')
-                                rr |= K;
-                            if (x == 'Q')
-                                rr |= Q;
-                            if (x == 'k')
-                                rr |= k;
-                            if (x == 'q')
-                                rr |= q;
-                        }
-                    }
-                    else if (repeat == 2)
-                    {
-                        iss >> info;
-                        if (info.size() == 2)
-                            en_passant_sq = { notation_to_square(info) };
-                    }
-                    else if (repeat == 1)
-                    {
-                        iss >> iinfo;
-                    }
-                    else
-                    {
-                        iss >> iinfo;
-                        played_moves += 2 * (iinfo - 1);
-                    }
-                }
+                set_board(iss);
             }
 
             string notation;
@@ -1784,12 +1780,12 @@ int main()
                 while (iss >> notation)
                 {
                     Move move = notation_to_move(notation);
-                    fix_rock_rights(board, move, rr);
-                    fix_en_passant_sq(board, move, en_passant_sq);
-                    make_move(move, board);
-                    whites_turn = not whites_turn;
+                    fix_rock_rights(global_board, move, global_rr);
+                    fix_en_passant_sq(global_board, move, global_en_passant_sq);
+                    make_move(move, global_board);
+                    global_whites_turn = not global_whites_turn;
                     played_moves++;
-                    position_count[create_FEN(board, whites_turn, rr, en_passant_sq)]++;
+                    position_count[create_FEN(global_board, global_whites_turn, global_rr, global_en_passant_sq)]++;
                 }
             }
 
@@ -1823,13 +1819,13 @@ int main()
                 limit_time = (float)INF;
             else if (depth == 0)
             {
-                if (whites_turn)
-                    calculate_time(wtime, winc, board);
+                if (global_whites_turn)
+                    calculate_time(wtime, winc, global_board);
                 else
-                    calculate_time(btime, binc, board);
+                    calculate_time(btime, binc, global_board);
             }
 
-            search_thread = thread(move_generator, depth, rr, en_passant_sq, whites_turn, ref(board));
+            search_thread = thread(move_generator, depth, global_rr, global_en_passant_sq, global_whites_turn, ref(global_board));
         }
         else if (cmd == "stop")
         {
