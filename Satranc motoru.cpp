@@ -1321,6 +1321,7 @@ void reset_board()
     for (int i = 2; i < 6; i++) { for (int j = 0; j < 8; j++) { global_board[i][j] = '#'; } }
 
     global_whites_turn = true;
+    book_finished = false;
     global_en_passant_sq = { -1, -1 };
     position_count.clear();
     stop_search = false;
@@ -1330,6 +1331,7 @@ void reset_board()
 void set_board(istringstream& iss)
 {
     stop_search = false;
+    book_finished = false;
     position_count.clear();
     string FEN;
     iss >> FEN;
