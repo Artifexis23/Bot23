@@ -1455,7 +1455,8 @@ Move play_from_book(const string& position_FEN)
     return opening_book[position_FEN][dist(gen)].move;
 }
 
-int dfs_search(int depth, int rr, square en_passant_sq, Move& move, bool whites_turn, array<array<char, 8>, 8> board)
+int dfs_search(int depth, int rr, square en_passant_sq, Move& move, bool whites_turn, array<array<char, 8>, 8> board, 
+    int cur_parent_best_value)
 {
     in_depth++;
     visited_node_count++;
@@ -1506,12 +1507,12 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move& move, bool whites_
                 continue;
             }
 
-            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
-
-            if (stop_search)
-                break;
+            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board, best_value);
 
             best_value = max(best_value, move_value);
+
+            if (best_value >= cur_parent_best_value or stop_search)
+                break;
         }
 
         in_depth--;
@@ -1531,12 +1532,12 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move& move, bool whites_
                 continue;
             }
 
-            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
-
-            if (stop_search)
-                break;
+            int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board, best_value);
 
             best_value = min(best_value, move_value);
+
+            if (best_value <= cur_parent_best_value or stop_search)
+                break;
         }
 
         in_depth--;
@@ -1584,7 +1585,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, a
                     continue;
                 }
 
-                int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+                int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board, bestmove_value);
 
                 //cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
                 //debug_board(board, move);
@@ -1612,7 +1613,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, a
                     continue;
                 }
 
-                int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+                int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board, bestmove_value);
 
                 //cerr << square_to_notation(move.from) << " " << square_to_notation(move.to) << " " << move_value << endl;
                 //debug_board(board, move);
@@ -1657,7 +1658,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, a
                         continue;
                     }
 
-                    int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+                    int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board, bestmove_value);
 
                     if (passed_time.elapsed_ms() > limit_time or stop_search)
                     {
@@ -1708,7 +1709,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, a
                         continue;
                     }
 
-                    int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board);
+                    int move_value = dfs_search(depth - 1, rr, en_passant_sq, move, whites_turn, board, bestmove_value);
 
                     if (passed_time.elapsed_ms() > limit_time or stop_search)
                     {
