@@ -856,7 +856,7 @@ void fix_en_passant_sq(array<array<char, 8>, 8>& board, Move& move, square& en_p
     }
 }
 
-void add_possible_pawn_moves(const square& sq, square& en_passant_sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
+void add_possible_pawn_moves(const square& sq, square& en_passant_sq, array<array<char, 8>, 8>& board, deque<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     if (board[line][column] == 'P')
@@ -886,14 +886,14 @@ void add_possible_pawn_moves(const square& sq, square& en_passant_sq, array<arra
         {
             if (line + 1 == 7)
             {
-                ret.push_back({ sq, {line + 1, column + 1}, 'q' });
-                ret.push_back({ sq, {line + 1, column + 1}, 'r' });
-                ret.push_back({ sq, {line + 1, column + 1}, 'n' });
-                ret.push_back({ sq, {line + 1, column + 1}, 'b' });
+                ret.push_front({ sq, {line + 1, column + 1}, 'q' });
+                ret.push_front({ sq, {line + 1, column + 1}, 'r' });
+                ret.push_front({ sq, {line + 1, column + 1}, 'n' });
+                ret.push_front({ sq, {line + 1, column + 1}, 'b' });
             }
             else
             {
-                ret.push_back({ sq, { line + 1, column + 1 } });
+                ret.push_front({ sq, { line + 1, column + 1 } });
             }
         }
 
@@ -903,14 +903,14 @@ void add_possible_pawn_moves(const square& sq, square& en_passant_sq, array<arra
         {
             if (line + 1 == 7)
             {
-                ret.push_back({ sq, {line + 1, column - 1}, 'q' });
-                ret.push_back({ sq, {line + 1, column - 1}, 'r' });
-                ret.push_back({ sq, {line + 1, column - 1}, 'n' });
-                ret.push_back({ sq, {line + 1, column - 1}, 'b' });
+                ret.push_front({ sq, {line + 1, column - 1}, 'q' });
+                ret.push_front({ sq, {line + 1, column - 1}, 'r' });
+                ret.push_front({ sq, {line + 1, column - 1}, 'n' });
+                ret.push_front({ sq, {line + 1, column - 1}, 'b' });
             }
             else
             {
-                ret.push_back({ sq, { line + 1, column - 1 } });
+                ret.push_front({ sq, { line + 1, column - 1 } });
             }
         }
     }
@@ -942,14 +942,14 @@ void add_possible_pawn_moves(const square& sq, square& en_passant_sq, array<arra
         {
             if (line - 1 == 0)
             {
-                ret.push_back({ sq, {line - 1, column + 1}, 'q' });
-                ret.push_back({ sq, {line - 1, column + 1}, 'r' });
-                ret.push_back({ sq, {line - 1, column + 1}, 'n' });
-                ret.push_back({ sq, {line - 1, column + 1}, 'b' });
+                ret.push_front({ sq, {line - 1, column + 1}, 'q' });
+                ret.push_front({ sq, {line - 1, column + 1}, 'r' });
+                ret.push_front({ sq, {line - 1, column + 1}, 'n' });
+                ret.push_front({ sq, {line - 1, column + 1}, 'b' });
             }
             else
             {
-                ret.push_back({ sq, { line - 1, column + 1 } });
+                ret.push_front({ sq, { line - 1, column + 1 } });
             }
         }
 
@@ -959,64 +959,72 @@ void add_possible_pawn_moves(const square& sq, square& en_passant_sq, array<arra
         {
             if (line - 1 == 0)
             {
-                ret.push_back({ sq, {line - 1, column - 1}, 'q' });
-                ret.push_back({ sq, {line - 1, column - 1}, 'r' });
-                ret.push_back({ sq, {line - 1, column - 1}, 'n' });
-                ret.push_back({ sq, {line - 1, column - 1}, 'b' });
+                ret.push_front({ sq, {line - 1, column - 1}, 'q' });
+                ret.push_front({ sq, {line - 1, column - 1}, 'r' });
+                ret.push_front({ sq, {line - 1, column - 1}, 'n' });
+                ret.push_front({ sq, {line - 1, column - 1}, 'b' });
             }
             else
             {
-                ret.push_back({ sq, { line - 1, column - 1 } });
+                ret.push_front({ sq, { line - 1, column - 1 } });
             }
         }
     }
 }
 
-void add_possible_knight_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
+void add_possible_knight_moves(const square& sq, array<array<char, 8>, 8>& board, deque<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     if (line < 7 and column < 6 and not is_same_team(board[line][column], board[line + 1][column + 2]))
     {
-        ret.push_back({ sq, { line + 1, column + 2 } });
+        if (board[line + 1][column + 2] == '#') ret.push_back({sq, {line + 1, column + 2}});
+        else ret.push_front({ sq, { line + 1, column + 2 } });
     }
 
     if (line > 0 and column < 6 and not is_same_team(board[line][column], board[line - 1][column + 2]))
     {
-        ret.push_back({ sq, { line - 1, column + 2 } });
+        if (board[line - 1][column + 2] == '#') ret.push_back({ sq, {line - 1, column + 2} });
+        else ret.push_front({ sq, { line - 1, column + 2 } });
     }
 
     if (line < 6 and column < 7 and not is_same_team(board[line][column], board[line + 2][column + 1]))
     {
-        ret.push_back({ sq, { line + 2, column + 1 } });
+        if (board[line + 2][column + 1] == '#') ret.push_back({ sq, {line + 2, column + 1} });
+        else ret.push_front({ sq, { line + 2, column + 1 } });
     }
 
     if (line < 6 and column > 0 and not is_same_team(board[line][column], board[line + 2][column - 1]))
     {
-        ret.push_back({ sq, { line + 2, column - 1 } });
+        if (board[line + 2][column - 1] == '#') ret.push_back({ sq, {line + 2, column - 1} });
+        else ret.push_front({ sq, { line + 2, column - 1 } });
     }
 
     if (line < 7 and column > 1 and not is_same_team(board[line][column], board[line + 1][column - 2]))
     {
-        ret.push_back({ sq, { line + 1, column - 2 } });
+        if (board[line + 1][column - 2] == '#') ret.push_back({ sq, {line + 1, column - 2} });
+        else ret.push_front({ sq, { line + 1, column - 2 } });
     }
 
     if (line > 0 and column > 1 and not is_same_team(board[line][column], board[line - 1][column - 2]))
     {
-        ret.push_back({ sq, { line - 1, column - 2 } });
+        if (board[line - 1][column - 2] == '#') ret.push_back({ sq, {line - 1, column - 2} });
+        else ret.push_front({ sq, { line - 1, column - 2 } });
     }
 
     if (line > 1 and column < 7 and not is_same_team(board[line][column], board[line - 2][column + 1]))
     {
-        ret.push_back({ sq, { line - 2, column + 1 } });
+        if (board[line - 2][column + 1] == '#') ret.push_back({ sq, {line - 2, column + 1} });
+        else ret.push_front({ sq, { line - 2, column + 1 } });
     }
 
     if (line > 1 and column > 0 and not is_same_team(board[line][column], board[line - 2][column - 1]))
     {
-        ret.push_back({ sq, { line - 2, column - 1 } });
+        if (board[line - 2][column - 1] == '#') ret.push_back({ sq, {line - 2, column - 1} });
+        else ret.push_front({ sq, { line - 2, column - 1 } });
     }
 }
 
-void add_possible_bishop_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
+void add_possible_bishop_moves(const square& sq, array<array<char, 8>, 8>& board, deque<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     while (true)
@@ -1024,8 +1032,12 @@ void add_possible_bishop_moves(const square& sq, array<array<char, 8>, 8>& board
         line++;
         column++;
         if (line > 7 or column > 7 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     line = sq.line, column = sq.column;
@@ -1034,8 +1046,12 @@ void add_possible_bishop_moves(const square& sq, array<array<char, 8>, 8>& board
         line++;
         column--;
         if (line > 7 or column < 0 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     line = sq.line, column = sq.column;
@@ -1044,8 +1060,12 @@ void add_possible_bishop_moves(const square& sq, array<array<char, 8>, 8>& board
         line--;
         column++;
         if (line < 0 or column > 7 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     line = sq.line, column = sq.column;
@@ -1054,20 +1074,28 @@ void add_possible_bishop_moves(const square& sq, array<array<char, 8>, 8>& board
         line--;
         column--;
         if (line < 0 or column < 0 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 }
 
-void add_possible_rook_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
+void add_possible_rook_moves(const square& sq, array<array<char, 8>, 8>& board, deque<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     while (true)
     {
         column++;
         if (column > 7 or is_same_team(board[line][column], board[line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+			ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     column = sq.column;
@@ -1075,8 +1103,12 @@ void add_possible_rook_moves(const square& sq, array<array<char, 8>, 8>& board, 
     {
         column--;
         if (column < 0 or is_same_team(board[line][column], board[line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     column = sq.column;
@@ -1084,8 +1116,12 @@ void add_possible_rook_moves(const square& sq, array<array<char, 8>, 8>& board, 
     {
         line++;
         if (line > 7 or is_same_team(board[line][column], board[sq.line][column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     line = sq.line;
@@ -1093,12 +1129,16 @@ void add_possible_rook_moves(const square& sq, array<array<char, 8>, 8>& board, 
     {
         line--;
         if (line < 0 or is_same_team(board[line][column], board[sq.line][column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 }
 
-void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
+void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board, deque<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     while (true)
@@ -1106,8 +1146,12 @@ void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board,
         line++;
         column++;
         if (line > 7 or column > 7 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#') 
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+		}
+		else ret.push_back({ sq, { line, column } });
     }
 
     line = sq.line, column = sq.column;
@@ -1116,8 +1160,12 @@ void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board,
         line++;
         column--;
         if (line > 7 or column < 0 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     line = sq.line, column = sq.column;
@@ -1126,8 +1174,12 @@ void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board,
         line--;
         column++;
         if (line < 0 or column > 7 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     line = sq.line, column = sq.column;
@@ -1136,8 +1188,12 @@ void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board,
         line--;
         column--;
         if (line < 0 or column < 0 or is_same_team(board[line][column], board[sq.line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     line = sq.line, column = sq.column;
@@ -1145,8 +1201,12 @@ void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board,
     {
         column++;
         if (column > 7 or is_same_team(board[line][column], board[line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     column = sq.column;
@@ -1154,8 +1214,12 @@ void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board,
     {
         column--;
         if (column < 0 or is_same_team(board[line][column], board[line][sq.column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     column = sq.column;
@@ -1163,8 +1227,12 @@ void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board,
     {
         line++;
         if (line > 7 or is_same_team(board[line][column], board[sq.line][column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 
     line = sq.line;
@@ -1172,60 +1240,72 @@ void add_possible_queen_moves(const square& sq, array<array<char, 8>, 8>& board,
     {
         line--;
         if (line < 0 or is_same_team(board[line][column], board[sq.line][column])) break;
-        ret.push_back({ sq, { line, column } });
-        if (board[line][column] != '#') break;
+        if (board[line][column] != '#')
+        {
+            ret.push_front({ sq, { line, column } });
+            break;
+        }
+        else ret.push_back({ sq, { line, column } });
     }
 }
 
-void add_possible_king_moves(const square& sq, array<array<char, 8>, 8>& board, vector<Move>& ret)
+void add_possible_king_moves(const square& sq, array<array<char, 8>, 8>& board, deque<Move>& ret)
 {
     int line = sq.line, column = sq.column;
     if (column < 7 and not is_same_team(board[line][column + 1], board[line][column]))
     {
-        ret.push_back({ sq, { line, column + 1 } });
+        if (board[line][column + 1] == '#') ret.push_back({ sq, {line, column + 1} });
+		else ret.push_front({ sq, { line, column + 1 } });
     }
 
     if (column > 0 and not is_same_team(board[line][column - 1], board[line][column]))
     {
-        ret.push_back({ sq, { line, column - 1 } });
+		if (board[line][column - 1] == '#') ret.push_back({ sq, {line, column - 1} });
+		else ret.push_front({ sq, { line, column - 1 } });
     }
 
     if (line < 7 and not is_same_team(board[line + 1][column], board[line][column]))
     {
-        ret.push_back({ sq, { line + 1, column } });
+		if (board[line + 1][column] == '#') ret.push_back({ sq, {line + 1, column} });
+        else ret.push_back({ sq, { line + 1, column } });
     }
 
     if (line > 0 and not is_same_team(board[line - 1][column], board[line][column]))
     {
-        ret.push_back({ sq, { line - 1, column } });
+        if (board[line - 1][column] == '#') ret.push_back({ sq, {line - 1, column} });
+		else ret.push_front({ sq, { line - 1, column } });
     }
 
     if (line < 7 and column < 7 and
         not is_same_team(board[line + 1][column + 1], board[line][column]))
     {
-        ret.push_back({ sq, { line + 1, column + 1 } });
+		if (board[line + 1][column + 1] == '#') ret.push_back({ sq, {line + 1, column + 1} });
+        else ret.push_back({ sq, { line + 1, column + 1 } });
     }
 
     if (line < 7 and column > 0 and
         not is_same_team(board[line + 1][column - 1], board[line][column]))
     {
-        ret.push_back({ sq, { line + 1, column - 1 } });
+        if (board[line + 1][column - 1] == '#') ret.push_back({ sq, {line + 1, column - 1} });
+		else ret.push_back({ sq, { line + 1, column - 1 } });
     }
 
     if (line > 0 and column < 7 and
         not is_same_team(board[line - 1][column + 1], board[line][column]))
     {
-        ret.push_back({ sq, { line - 1, column + 1 } });
+		if (board[line - 1][column + 1] == '#') ret.push_back({ sq, {line - 1, column + 1} });
+        else ret.push_back({ sq, { line - 1, column + 1 } });
     }
 
     if (line > 0 and column > 0 and
         not is_same_team(board[line - 1][column - 1], board[line][column]))
     {
-        ret.push_back({ sq, { line - 1, column - 1 } });
+		if (board[line - 1][column - 1] == '#') ret.push_back({ sq, {line - 1, column - 1} });
+        else ret.push_back({ sq, { line - 1, column - 1 } });
     }
 }
 
-void add_possible_rock_moves(int rr, array<array<char, 8>, 8>& board, bool whites_turn, vector<Move>& ret)
+void add_possible_rock_moves(int rr, array<array<char, 8>, 8>& board, bool whites_turn, deque<Move>& ret)
 {
     if (whites_turn)
     {
@@ -1264,7 +1344,7 @@ void add_possible_rock_moves(int rr, array<array<char, 8>, 8>& board, bool white
     }
 }
 
-void add_possible_moves(int rr, array<array<char, 8>, 8>& board, bool whites_turn, square& en_passant_sq, vector<Move>& moves)
+void add_possible_moves(int rr, array<array<char, 8>, 8>& board, bool whites_turn, square& en_passant_sq, deque<Move>& moves)
 {
     add_possible_rock_moves(rr, board, whites_turn, moves);
 
@@ -1492,7 +1572,7 @@ int dfs_search(int depth, int rr, square en_passant_sq, Move& move, bool whites_
         return evaluate(board);
     }
 
-    vector<Move> moves;
+    deque<Move> moves;
     add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
 
     if (whites_turn)
@@ -1562,7 +1642,7 @@ void move_generator(int depth, int rr, square en_passant_sq, bool whites_turn, a
         }
     }
 
-    vector<Move> moves;
+    deque<Move> moves;
     add_possible_moves(rr, board, whites_turn, en_passant_sq, moves);
 
     if (depth != 0)
